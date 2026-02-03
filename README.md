@@ -3,8 +3,8 @@
 
 ## Author
 
-Hongrui Zhao (zeturn) 923210265
-
+Hongrui Zhao (zeturn) 923210265  
+Haoqing Chen (shanoaice) 923493503
 
 This project implements a set of DSV / XML parse and write components:
 
