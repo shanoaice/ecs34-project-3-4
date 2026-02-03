@@ -2,14 +2,14 @@
 
 ## Purpose
 
-`CDSVReader` reads DSV text from `CDataSource` line by line, and parses one line into a field list (`std::vector<std::string>`).
+`CDSVReader` reads DSV text from `CDataSource` line by line, and parses one line into a list of cells (`std::vector<std::string>`).
 
 ## Header / Dependencies
 
 - Header: `include/DSVReader.h`
 - Dependency: `include/DataSource.h`
 
-The constructor takes a `std::shared_ptr<CDataSource>`. The reader keeps this shared_ptr.
+The constructor takes a `std::shared_ptr<CDataSource>`. The reader keeps this shared_ptr and reads the DSV file from it.
 
 ## Constructor
 
@@ -21,11 +21,11 @@ CDSVReader(std::shared_ptr<CDataSource> src, char delimiter);
 
 - `src`
 	- Input data source.
-	- The reader reads characters from `src` (via `Get/Peek/End`).
+	- The reader reads the DSV file from the `CDataSource`.
 
 - `delimiter`
 	- Field delimiter, like `','`, `'\t'`, `'|'`, etc.
-	- Note: the quote character `"` is used to wrap fields in DSV. Do not set `delimiter` to `"`.
+	- Note: the quote character `"` treated as a `,` comma.
 
 ## Main Methods
 
@@ -47,4 +47,5 @@ Reads and parses the fields of the “next line”.
 			- If the next char is `\n` or end-of-file: the row ends.
 
 - Return
-	- `true`.
+	- `true` if read successfully.
+	- `false` if it fails.
