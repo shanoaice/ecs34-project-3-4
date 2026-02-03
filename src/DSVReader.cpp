@@ -98,7 +98,7 @@ struct CDSVReader::SImplementation {
 
 // pimpl
 CDSVReader::CDSVReader(std::shared_ptr<CDataSource> source, char delimiter) {
-    DImplementation = std::make_unique<SImplementation>(source, delimiter);
+    DImplementation = std::make_unique<SImplementation>(source, delimiter == '"' ? ',' : delimiter);
 }
 
 CDSVReader::~CDSVReader() = default;
