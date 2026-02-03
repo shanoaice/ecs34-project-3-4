@@ -69,6 +69,8 @@ struct CDSVReader::SImplementation {
 
         return true;
     }
+
+    bool End() { return DSource->End(); }
 };
 
 CDSVReader::CDSVReader(std::shared_ptr<CDataSource> source, char delimiter) {
@@ -80,3 +82,5 @@ CDSVReader::~CDSVReader() = default;
 bool CDSVReader::ReadRow(std::vector<std::string> &row) {
     return DImplementation->ReadRow(row);
 }
+
+bool CDSVReader::End() const { return DImplementation->End(); }

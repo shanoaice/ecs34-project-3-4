@@ -111,9 +111,11 @@ TEST(DSVReader, Comma) {
     Reader.ReadRow(read_row2);
     Reader.ReadRow(read_row3);
 
-    EXPECT_EQ(read_row1, row1);
-    EXPECT_EQ(read_row2, row2);
-    EXPECT_EQ(read_row3, row3);
+  EXPECT_EQ(read_row1, row1);
+  EXPECT_EQ(read_row2, row2);
+  EXPECT_EQ(read_row3, row3);
+
+  EXPECT_TRUE(Reader.End());
 }
 
 TEST(DSVReader, CommaQuoted) {
@@ -137,9 +139,11 @@ TEST(DSVReader, CommaQuoted) {
     Reader.ReadRow(read_row2);
     Reader.ReadRow(read_row3);
 
-    EXPECT_EQ(read_row1, row1);
-    EXPECT_EQ(read_row2, row2);
-    EXPECT_EQ(read_row3, row3);
+  EXPECT_EQ(read_row1, row1);
+  EXPECT_EQ(read_row2, row2);
+  EXPECT_EQ(read_row3, row3);
+
+  EXPECT_TRUE(Reader.End());
 }
 
 TEST(DSVReader, Delim) {
@@ -163,9 +167,15 @@ TEST(DSVReader, Delim) {
     Reader.ReadRow(read_row2);
     Reader.ReadRow(read_row3);
 
-    EXPECT_EQ(read_row1, row1);
-    EXPECT_EQ(read_row2, row2);
-    EXPECT_EQ(read_row3, row3);
+  Reader.ReadRow(read_row1);
+  Reader.ReadRow(read_row2);
+  Reader.ReadRow(read_row3);
+
+  EXPECT_EQ(read_row1, row1);
+  EXPECT_EQ(read_row2, row2);
+  EXPECT_EQ(read_row3, row3);
+
+  EXPECT_TRUE(Reader.End());
 }
 
 TEST(DSVReader, DelimQuoted) {
@@ -189,7 +199,9 @@ TEST(DSVReader, DelimQuoted) {
     Reader.ReadRow(read_row2);
     Reader.ReadRow(read_row3);
 
-    EXPECT_EQ(read_row1, row1);
-    EXPECT_EQ(read_row2, row2);
-    EXPECT_EQ(read_row3, row3);
+  EXPECT_EQ(read_row1, row1);
+  EXPECT_EQ(read_row2, row2);
+  EXPECT_EQ(read_row3, row3);
+
+  EXPECT_TRUE(Reader.End());
 }
