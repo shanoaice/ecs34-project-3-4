@@ -1,12 +1,7 @@
 
 # ECS 34 Project 2 — DSV / XML Reader & Writer
 
-## Author
-
-Hongrui Zhao (zeturn) 923210265
-
-
-This project implements a set of DSV / XML parse and write components:
+This project implements a set of classes that is crucial for navigation and transportation planning:
 
 - DSV：`CDSVReader` / `CDSVWriter`
 - XML：`CXMLReader` / `CXMLWriter`
