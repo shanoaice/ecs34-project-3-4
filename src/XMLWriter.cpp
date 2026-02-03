@@ -12,6 +12,7 @@ struct CXMLWriter::SImplementation {
     std::shared_ptr<CDataSink> DSink;
     std::vector<std::string> DOpenStack;
 
+    // escapes cdata
     static std::string EscapeText(const std::string &s) {
         auto escaped = StringUtils::Replace(s, "&", "&amp;");
         escaped = StringUtils::Replace(escaped, "<", "&lt;");
@@ -20,6 +21,7 @@ struct CXMLWriter::SImplementation {
         return escaped;
     }
 
+    // escaptes tag string
     static std::string EscapeTag(const std::string &s) {
         auto escaped = StringUtils::Replace(s, "&", "&amp;");
         escaped = StringUtils::Replace(escaped, "<", "&lt;");
@@ -30,7 +32,7 @@ struct CXMLWriter::SImplementation {
         return escaped;
     }
 
-    bool WriteRaw(const std::string &out) { // 输出原始字符串
+    bool WriteRaw(const std::string &out) { // writes the raw data
         std::vector<char> buf(out.begin(), out.end());
         return DSink->Write(buf);
     }
