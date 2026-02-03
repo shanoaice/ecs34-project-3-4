@@ -27,6 +27,7 @@ struct CDSVWriter::SImplementation {
 
             std::vector<char> buf;
 
+            // if there are quotes, escape by doubling them
             if (col.find("\"") != std::string::npos) {
                 auto escaped = StringUtils::Replace(col, "\"", "\"\"");
                 buf.assign(escaped.cbegin(), escaped.cend());
@@ -34,12 +35,15 @@ struct CDSVWriter::SImplementation {
                 buf.assign(col.cbegin(), col.cend());
             }
 
+            // if there are special characters, quote the string
+            // or if quoteall is enabled
             if (col.find(DDelimiter) != std::string::npos ||
                 col.find("\n") != std::string::npos ||
                 col.find("\"") != std::string::npos || DQuoteAll) {
                 DSink->Put('"');
                 DSink->Write(buf);
                 DSink->Put('"');
+            // otherwise, write the original buf
             } else {
                 DSink->Write(buf);
             }
