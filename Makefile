@@ -11,7 +11,7 @@ TESTOBJDIR=./testobj
 TESTBINDIR=./testbin
 COVERAGEDIR=./htmlcov
 
-LIBRARY_NAME := libecs34proj2
+LIBRARY_NAME := libecs34proj3
 
 INCLUDE  += -I $(INCLUDE_DIR)
 DEFINES  +=
