@@ -1,15 +1,16 @@
 
-# ECS 34 Project 2 — DSV / XML Reader & Writer
+# ECS 34 Project 3 — CSV Bus System & OpenStreetMap XML Parser
 
 ## Author
 
-Hongrui Zhao (zeturn) 923210265  
-Haoqing Chen (shanoaice) 923493503
+Haoqing Chen (shanoaice) 923493503  
+Iris Zhong (zzzsqiris)  
+*Hongrui Zhao (zeturn) 923210265 (Project 2 Code)*
 
-This project implements a set of DSV / XML parse and write components:
+This project implements a set of CSV & OpenStreetMap XML Parser:
 
-- DSV：`CDSVReader` / `CDSVWriter`
-- XML：`CXMLReader` / `CXMLWriter`
+- CSV `CCSVBusSystem`
+- OSM XML：`COpenStreetMap`
 
 ## Folder Structure
 
@@ -19,22 +20,3 @@ This project implements a set of DSV / XML parse and write components:
 - `docs/`: API / usage docs
 
 ## Components
-
-### DataSource and DataSink
-
-- `CDataSource`: abstract input stream (`End/Get/Peek/Read`)
-- `CDataSink`: abstract output stream (`Put/Write`)
-
-### DSV
-
-- `CDSVReader`: reads DSV from `CDataSource` and parses it into `std::vector<std::string>`
-- `CDSVWriter`: writes `std::vector<std::string>` to `CDataSink` using DSV rules
-
-### XML
-
-- `CXMLReader`: streaming XML parser from `CDataSource`, outputs `SXMLEntity`
-- `CXMLWriter`: writes `SXMLEntity` events as XML to `CDataSink`
-
-### AI Usage
-
-We use Claude Code to translate between English and Chinese in docs. Prompts like this: Translate the doc under docs folder and README.md from English text to Chinese. @./docs @README.md
