@@ -5,7 +5,7 @@
 #include "DSVReader.h"
 #include "DSVWriter.h"
 #include <algorithm>
-#include <ranges>
+#include <unordered_map>
 #include <utility>
 
 struct CCSVBusSystem::SImplementation {
@@ -40,9 +40,9 @@ struct CCSVBusSystem::SImplementation {
             return DStops.size();
         }
 
-        TStopID GetStopID(std::size_t index) const noexcept override {
+        TStopID GetStopID(const std::size_t index) const noexcept override {
             if (index >= DStops.size())
-                return CBusSystem::InvalidStopID;
+                return InvalidStopID;
             return DStops[index];
         }
 
@@ -51,10 +51,11 @@ struct CCSVBusSystem::SImplementation {
         }
     };
 
-    std::vector<std::shared_ptr<SRoute>> routes;
+    std::unordered_map<std::string, std::shared_ptr<SRoute>> DRoutesByName;
+    std::vector<std::shared_ptr<SRoute>> DRoutesByIndex;
     std::vector<SStop> stops;
 
-    std::size_t RouteCount() const noexcept { return routes.size(); }
+    std::size_t RouteCount() const noexcept { return DRoutesByName.size(); }
 
     std::size_t StopCount() const noexcept { return stops.size(); }
 
@@ -75,19 +76,15 @@ struct CCSVBusSystem::SImplementation {
 
     std::shared_ptr<SRoute>
     RouteByIndex(const std::size_t index) const noexcept {
-        if (index >= routes.size())
+        if (index >= DRoutesByIndex.size())
             return nullptr;
-        return routes[index];
+        return DRoutesByIndex[index];
     }
 
     std::shared_ptr<SRoute>
     RouteByName(const std::string &name) const noexcept {
-        const auto it = std::find_if(
-            routes.cbegin(), routes.cend(),
-            [name](const auto &route) { return route->Name() == name; });
-        if (it == routes.cend())
-            return nullptr;
-        return *it;
+        const auto it = DRoutesByName.find(name);
+        return it == DRoutesByName.cend() ? nullptr : it->second;
     }
 };
 
@@ -150,14 +147,16 @@ CCSVBusSystem::CCSVBusSystem(const std::shared_ptr<CDSVReader> &stopSource,
 
                 // Group all consecutive rows with the same route name
                 while (hasData && buf.size() >= 2 && buf[0] == routeName) {
-                    routeStops.push_back(std::stoul(buf[1]));
+                    routeStops.emplace_back(std::stoul(buf[1]));
                     buf.clear();
                     hasData = routeSource->ReadRow(buf);
                 }
 
-                DImplementation->routes.push_back(
-                    std::make_shared<SImplementation::SRoute>(
-                        routeName, std::move(routeStops)));
+                const auto route = std::make_shared<SImplementation::SRoute>(
+                    routeName, std::move(routeStops));
+
+                DImplementation->DRoutesByName[routeName] = route;
+                DImplementation->DRoutesByIndex.emplace_back(route);
             } else {
                 // Ensure we always progress even if a row is malformed
                 buf.clear();
