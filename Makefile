@@ -29,7 +29,7 @@ TEST_CXXFLAGS := $(TEST_CFLAGS) -std=c++23
 TEST_LDFLAGS  := -fuse-ld=$(LD) -lgcov -lpthread -lgtest -lgtest_main -lexpat
 
 SOURCES := StringUtils StringDataSink StringDataSource DSVWriter DSVReader XMLReader XMLWriter CSVBusSystem OpenStreetMap
-TESTS := StringUtilsTest StringDataSinkTest StringDataSourceTest DSVTest XMLTest OpenStreetMapTest
+TESTS := StringUtilsTest StringDataSinkTest StringDataSourceTest DSVTest XMLTest CSVBusSystemTest OpenStreetMapTest
 
 .PHONY: all directories test_directories test clean
 
