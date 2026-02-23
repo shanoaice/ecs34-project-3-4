@@ -8,7 +8,7 @@ class OpenStreetMapTest : public ::testing::Test {
   protected:
     OpenStreetMapTest() {
         std::ifstream osmDataFile;
-        osmDataFile.open("../data/davis.osm");
+        osmDataFile.open("./data/davis.osm");
         std::string osmData{std::istreambuf_iterator<char>(osmDataFile),
                             std::istreambuf_iterator<char>()};
         osmDataFile.close();
@@ -57,8 +57,8 @@ TEST_F(OpenStreetMapTest, NodeByIndex) {
     EXPECT_TRUE(node41->HasAttribute("highway"));
     EXPECT_TRUE(node41->HasAttribute("ref"));
 
-    EXPECT_EQ(node41->GetAttributeKey(0), "motorway_junction");
-    EXPECT_EQ(node41->GetAttributeKey(1), "71");
+    EXPECT_EQ(node41->GetAttributeKey(0), "highway");
+    EXPECT_EQ(node41->GetAttributeKey(1), "ref");
 
     EXPECT_EQ(node41->GetAttributeKey(2), "");
 
@@ -95,8 +95,8 @@ TEST_F(OpenStreetMapTest, NodeByID) {
     EXPECT_TRUE(node_id62224641->HasAttribute("highway"));
     EXPECT_TRUE(node_id62224641->HasAttribute("ref"));
 
-    EXPECT_EQ(node_id62224641->GetAttributeKey(0), "motorway_junction");
-    EXPECT_EQ(node_id62224641->GetAttributeKey(1), "71");
+    EXPECT_EQ(node_id62224641->GetAttributeKey(0), "highway");
+    EXPECT_EQ(node_id62224641->GetAttributeKey(1), "ref");
 
     EXPECT_EQ(node_id62224641->GetAttributeKey(2), "");
 
@@ -124,12 +124,12 @@ TEST_F(OpenStreetMapTest, WayByIndex) {
 
     EXPECT_EQ(way0->AttributeCount(), 6);
 
-    EXPECT_EQ(way0->GetAttributeKey(0), "2");
-    EXPECT_EQ(way0->GetAttributeKey(1), "yes");
-    EXPECT_EQ(way0->GetAttributeKey(2), "no");
-    EXPECT_EQ(way0->GetAttributeKey(3), "motorway_link");
-    EXPECT_EQ(way0->GetAttributeKey(4), "Sacramento");
-    EXPECT_EQ(way0->GetAttributeKey(5), "I 80 East");
+    EXPECT_EQ(way0->GetAttributeKey(0), "lanes");
+    EXPECT_EQ(way0->GetAttributeKey(1), "oneway");
+    EXPECT_EQ(way0->GetAttributeKey(2), "bicycle");
+    EXPECT_EQ(way0->GetAttributeKey(3), "highway");
+    EXPECT_EQ(way0->GetAttributeKey(4), "destination");
+    EXPECT_EQ(way0->GetAttributeKey(5), "destination:ref");
 
     EXPECT_EQ(way0->GetAttributeKey(6), "");
 
@@ -161,7 +161,7 @@ TEST_F(OpenStreetMapTest, WayByIndex) {
 
     EXPECT_EQ(way4->AttributeCount(), 1);
 
-    EXPECT_EQ(way4->GetAttributeKey(0), "residential");
+    EXPECT_EQ(way4->GetAttributeKey(0), "highway");
 
     EXPECT_EQ(way4->GetAttributeKey(1), "");
 
@@ -192,12 +192,12 @@ TEST_F(OpenStreetMapTest, WayByID) {
 
     EXPECT_EQ(way_id8699536->AttributeCount(), 6);
 
-    EXPECT_EQ(way_id8699536->GetAttributeKey(0), "2");
-    EXPECT_EQ(way_id8699536->GetAttributeKey(1), "yes");
-    EXPECT_EQ(way_id8699536->GetAttributeKey(2), "no");
-    EXPECT_EQ(way_id8699536->GetAttributeKey(3), "motorway_link");
-    EXPECT_EQ(way_id8699536->GetAttributeKey(4), "Sacramento");
-    EXPECT_EQ(way_id8699536->GetAttributeKey(5), "I 80 East");
+    EXPECT_EQ(way_id8699536->GetAttributeKey(0), "lanes");
+    EXPECT_EQ(way_id8699536->GetAttributeKey(1), "oneway");
+    EXPECT_EQ(way_id8699536->GetAttributeKey(2), "bicycle");
+    EXPECT_EQ(way_id8699536->GetAttributeKey(3), "highway");
+    EXPECT_EQ(way_id8699536->GetAttributeKey(4), "destination");
+    EXPECT_EQ(way_id8699536->GetAttributeKey(5), "destination:ref");
 
     EXPECT_EQ(way_id8699536->GetAttributeKey(6), "");
 
@@ -229,7 +229,7 @@ TEST_F(OpenStreetMapTest, WayByID) {
 
     EXPECT_EQ(way_id8706922->AttributeCount(), 1);
 
-    EXPECT_EQ(way_id8706922->GetAttributeKey(0), "residential");
+    EXPECT_EQ(way_id8706922->GetAttributeKey(0), "highway");
 
     EXPECT_EQ(way_id8706922->GetAttributeKey(1), "");
 
