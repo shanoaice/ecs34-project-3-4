@@ -10,7 +10,7 @@ class COpenStreetMap : public CStreetMap{
         std::unique_ptr<SImplementation> DImplementation;
 
     public:
-        COpenStreetMap(std::shared_ptr<CXMLReader> src);
+        COpenStreetMap(const std::shared_ptr<CXMLReader>& src);
         ~COpenStreetMap();
 
         std::size_t NodeCount() const noexcept override;
