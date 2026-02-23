@@ -29,39 +29,44 @@ struct CDSVReader::SImplementation {
                 continue;
             }
 
-            // if we are currently inside a quote, check what this quote is supposed to be
+            // if we are currently inside a quote, check what this quote is
+            // supposed to be
             if (ch == '"' && in_quotes) {
                 char next_ch;
                 // peek the next character
                 DSource->Peek(next_ch);
 
-                // if the next character is a delimiter, this quote is an End of Cell
-                // but not End of Line, so we consume the delimiter and returns false
+                // if the next character is a delimiter, this quote is an End of
+                // Cell but not End of Line, so we consume the delimiter and
+                // returns false
                 if (next_ch == DDelimiter) {
                     DSource->Get(next_ch);
                     return false;
                 }
 
                 // if the next character is a newline or end of file,
-                // this quote is also an End of Cell, but now we returns true instead
+                // this quote is also an End of Cell, but now we returns true
+                // instead
                 if (next_ch == '\n' || DSource->End()) {
                     DSource->Get(next_ch);
                     return true;
                 }
 
-                // if the next character is another double quote, it's an escaped double quote
-                // we consumes it and store it into ch, so that later we add it to our result string
+                // if the next character is another double quote, it's an
+                // escaped double quote we consumes it and store it into ch, so
+                // that later we add it to our result string
                 if (next_ch == '"') {
                     DSource->Get(ch);
                 }
 
-                // we decided to be permissive and not bail out when the next_ch is anything else,
-                // and allow a singular double-quote inside a quoted cell to also be treated as a literal quote
-                // this is just a design choice.
+                // we decided to be permissive and not bail out when the next_ch
+                // is anything else, and allow a singular double-quote inside a
+                // quoted cell to also be treated as a literal quote this is
+                // just a design choice.
             }
 
-            // if we are not in quotes and if we encountered the delimiter character,
-            // it is an end of cell, but not end of row / end of line
+            // if we are not in quotes and if we encountered the delimiter
+            // character, it is an end of cell, but not end of row / end of line
             // returns false
             if (ch == DDelimiter && !in_quotes) {
                 return false;
@@ -82,6 +87,8 @@ struct CDSVReader::SImplementation {
     }
 
     bool ReadRow(std::vector<std::string> &row) {
+        if (DSource->End())
+            return false;
         std::string current_val;
         while (!ParseValue(current_val)) {
             row.push_back(current_val);
@@ -92,13 +99,15 @@ struct CDSVReader::SImplementation {
         return true;
     }
 
-    // ParseValue and ReadRow should not bail out, so we just detect whether we consumed all sources
+    // ParseValue and ReadRow should not bail out, so we just detect whether we
+    // consumed all sources
     bool End() { return DSource->End(); }
 };
 
 // pimpl
 CDSVReader::CDSVReader(std::shared_ptr<CDataSource> source, char delimiter) {
-    DImplementation = std::make_unique<SImplementation>(source, delimiter == '"' ? ',' : delimiter);
+    DImplementation = std::make_unique<SImplementation>(
+        source, delimiter == '"' ? ',' : delimiter);
 }
 
 CDSVReader::~CDSVReader() = default;
