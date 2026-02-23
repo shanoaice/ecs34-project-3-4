@@ -4,23 +4,13 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 // define a constant to handle invalid node id
 const CStreetMap::TNodeID CStreetMap::InvalidNodeID;
 
 struct COpenStreetMap::SImplementation {
-
-    const std::string DOSMTag = "osm";
-    const std::string DNodeTag = "node";
-    const std::string DNodeIDAttr = "id";
-    const std::string DNodeLatAttr = "lat";
-    const std::string DNodeLonAttr = "lon";
-    const std::string DTagTag = "tag";
-    const std::string DWayTag = "way";
-    const std::string DWayIDAttr = "id";
-    const std::string DWayNodeTag = "nd";
-    const std::string DWayNodeAtt = "ref";
 
     struct SNode : public CStreetMap::SNode {
         TNodeID DID = InvalidNodeID;
@@ -59,7 +49,7 @@ struct COpenStreetMap::SImplementation {
                              [key](const auto &attr_pair) {
                                  return attr_pair.first == key;
                              });
-            return it == DAttributes.end() ? "" : it->second;
+            return it == DAttributes.cend() ? "" : it->second;
         }
     };
 
@@ -112,14 +102,17 @@ struct COpenStreetMap::SImplementation {
                              [key](const auto &attr_pair) {
                                  return attr_pair.first == key;
                              });
-            return it == DAttributes.end() ? "" : it->second;
+            return it == DAttributes.cend() ? "" : it->second;
         }
     };
 
     std::vector<std::shared_ptr<SWay>> DWays;
-    std::vector<std::shared_ptr<SNode>> DNodes;
+    std::unordered_map<TWayID, std::shared_ptr<SWay>> DWaysById;
 
-    bool ParseOSMRefactor(const std::shared_ptr<CXMLReader> &src) {
+    std::vector<std::shared_ptr<SNode>> DNodes;
+    std::unordered_map<TNodeID, std::shared_ptr<SNode>> DNodesById;
+
+    bool ParseOpenStreetMap(const std::shared_ptr<CXMLReader> &src) {
         // parse until OSM tag is found
         SXMLEntity currentEntity;
         src->ReadEntity(currentEntity);
@@ -135,18 +128,18 @@ struct COpenStreetMap::SImplementation {
             if (currentEntity.DType == SXMLEntity::EType::StartElement &&
                 currentEntity.DNameData == "node") {
                 // call a function to parse the current node block
-                ParseNodeRefactor(src, currentEntity);
+                ParseNode(src, currentEntity);
             } else if (currentEntity.DType == SXMLEntity::EType::StartElement &&
                        currentEntity.DNameData == "way") {
                 // call a function to parse the current way block
-                ParseWayRefactor(src, currentEntity);
+                ParseWay(src, currentEntity);
             }
         }
 
         return true;
     }
 
-    void ParseNodeRefactor(const std::shared_ptr<CXMLReader> &src,
+    void ParseNode(const std::shared_ptr<CXMLReader> &src,
                            SXMLEntity &currentEntity) {
         SNode node;
         node.DID = std::stoull(currentEntity.AttributeValue("id"));
@@ -173,10 +166,14 @@ struct COpenStreetMap::SImplementation {
                 }
             }
         }
-        DNodes.push_back(std::make_shared<SNode>(node));
+
+        const auto nodePtr = std::make_shared<SNode>(node);
+
+        DNodes.emplace_back(nodePtr);
+        DNodesById[node.DID] = nodePtr;
     }
 
-    void ParseWayRefactor(const std::shared_ptr<CXMLReader> &src,
+    void ParseWay(const std::shared_ptr<CXMLReader> &src,
                           SXMLEntity &currentEntity) {
         SWay way;
         way.DID = std::stoull(currentEntity.AttributeValue("id"));
@@ -214,11 +211,14 @@ struct COpenStreetMap::SImplementation {
             }
         }
 
-        DWays.push_back(std::make_shared<SWay>(way));
+        const auto wayPtr = std::make_shared<SWay>(way);
+
+        DWays.push_back(wayPtr);
+        DWaysById[way.DID] = wayPtr;
     }
 
     explicit SImplementation(const std::shared_ptr<CXMLReader> &src) {
-        if (ParseOSMRefactor(src)) {
+        if (ParseOpenStreetMap(src)) {
         }
     }
 
@@ -240,11 +240,9 @@ struct COpenStreetMap::SImplementation {
 
     std::shared_ptr<CStreetMap::SNode>
     NodeByID(const TNodeID id) const noexcept {
-        auto it =
-            std::find_if(DNodes.cbegin(), DNodes.cend(),
-                         [id](const auto &node) { return node->ID() == id; });
+        const auto it = DNodesById.find(id);
 
-        return it == DNodes.cend() ? nullptr : *it;
+        return it == DNodesById.cend() ? nullptr : it->second;
     }
 
     std::shared_ptr<CStreetMap::SWay>
@@ -258,10 +256,9 @@ struct COpenStreetMap::SImplementation {
 
     std::shared_ptr<CStreetMap::SWay> WayByID(const TWayID id) const noexcept {
         // find way by way id
-        auto it =
-            std::find_if(DWays.cbegin(), DWays.cend(),
-                         [id](const auto &way) { return way->ID() == id; });
-        return it == DWays.cend() ? nullptr : *it;
+        const auto it = DWaysById.find(id);
+
+        return it == DWaysById.cend() ? nullptr : it->second;
     }
 };
 

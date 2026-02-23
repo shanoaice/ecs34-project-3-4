@@ -15,29 +15,27 @@ class OpenStreetMapTest : public ::testing::Test {
 
         dataSource = std::make_shared<CStringDataSource>(osmData);
         reader = std::make_shared<CXMLReader>(dataSource);
+        osm = std::make_unique<COpenStreetMap>(reader);
     }
 
     std::shared_ptr<CStringDataSource> dataSource;
     std::shared_ptr<CXMLReader> reader;
+    std::unique_ptr<COpenStreetMap> osm;
 
     ~OpenStreetMapTest() override = default;
 };
 
 TEST_F(OpenStreetMapTest, NodeCount) {
-    const COpenStreetMap osm(reader);
-    EXPECT_EQ(osm.NodeCount(), 10259);
+    EXPECT_EQ(osm->NodeCount(), 10259);
 }
 
 TEST_F(OpenStreetMapTest, WayCount) {
-    const COpenStreetMap osm(reader);
-    EXPECT_EQ(osm.WayCount(), 1644);
+    EXPECT_EQ(osm->WayCount(), 1644);
 }
 
 TEST_F(OpenStreetMapTest, NodeByIndex) {
-    const COpenStreetMap osm(reader);
-
     // simple node
-    const auto node0 = osm.NodeByIndex(0);
+    const auto node0 = osm->NodeByIndex(0);
     constexpr std::pair<double, double> node0_location{38.5178523,
                                                        -121.7712408};
     EXPECT_EQ(node0->ID(), 62208369ull);
@@ -45,7 +43,7 @@ TEST_F(OpenStreetMapTest, NodeByIndex) {
     EXPECT_EQ(node0->Location(), node0_location);
 
     // complex node
-    const auto node41 = osm.NodeByIndex(41);
+    const auto node41 = osm->NodeByIndex(41);
     constexpr std::pair<double, double> node41_location{38.5222679,
                                                         -121.7673869};
     EXPECT_EQ(node41->ID(), 62224641ull);
@@ -68,14 +66,12 @@ TEST_F(OpenStreetMapTest, NodeByIndex) {
     EXPECT_EQ(node41->GetAttribute("invalid"), "");
 
     // idx >= nodeCount
-    EXPECT_EQ(osm.NodeByIndex(osm.NodeCount()), nullptr);
+    EXPECT_EQ(osm->NodeByIndex(osm->NodeCount()), nullptr);
 }
 
 TEST_F(OpenStreetMapTest, NodeByID) {
-    const COpenStreetMap osm(reader);
-
     // simple node
-    const auto node_id62345194 = osm.NodeByID(62345194ull);
+    const auto node_id62345194 = osm->NodeByID(62345194ull);
     constexpr std::pair<double, double> node62345194_location{38.5199603,
                                                               -121.7692337};
     EXPECT_EQ(node_id62345194->ID(), 62345194ull);
@@ -83,7 +79,7 @@ TEST_F(OpenStreetMapTest, NodeByID) {
     EXPECT_EQ(node_id62345194->Location(), node62345194_location);
 
     // complex node
-    const auto node_id62224641 = osm.NodeByID(62224641ull);
+    const auto node_id62224641 = osm->NodeByID(62224641ull);
     constexpr std::pair<double, double> node62224641_location{38.5222679,
                                                               -121.7673869};
     EXPECT_EQ(node_id62224641->ID(), 62224641ull);
@@ -106,14 +102,12 @@ TEST_F(OpenStreetMapTest, NodeByID) {
     EXPECT_EQ(node_id62224641->GetAttribute("invalid"), "");
 
     // non-existent node ID
-    EXPECT_EQ(osm.NodeByID(23849999ull), nullptr);
+    EXPECT_EQ(osm->NodeByID(23849999ull), nullptr);
 }
 
 TEST_F(OpenStreetMapTest, WayByIndex) {
-    const COpenStreetMap osm(reader);
-
     // way 1: motorway_link I-80 E to Sac
-    const auto way0 = osm.WayByIndex(0);
+    const auto way0 = osm->WayByIndex(0);
     EXPECT_EQ(way0->ID(), 8699536ull);
 
     EXPECT_EQ(way0->NodeCount(), 10);
@@ -151,7 +145,7 @@ TEST_F(OpenStreetMapTest, WayByIndex) {
 
     EXPECT_EQ(way0->GetAttribute("invalid"), "");
 
-    const auto way4 = osm.WayByIndex(4);
+    const auto way4 = osm->WayByIndex(4);
     EXPECT_EQ(way4->ID(), 8706922ull);
 
     EXPECT_EQ(way4->NodeCount(), 3);
@@ -174,14 +168,12 @@ TEST_F(OpenStreetMapTest, WayByIndex) {
     EXPECT_EQ(way4->GetAttribute("invalid"), "");
 
     // idx >= wayCount
-    EXPECT_EQ(osm.WayByIndex(osm.WayCount()), nullptr);
+    EXPECT_EQ(osm->WayByIndex(osm->WayCount()), nullptr);
 }
 
 TEST_F(OpenStreetMapTest, WayByID) {
-    const COpenStreetMap osm(reader);
-
     // way 1: motorway_link I-80 E to Sac
-    const auto way_id8699536 = osm.WayByID(8699536ull);
+    const auto way_id8699536 = osm->WayByID(8699536ull);
     EXPECT_EQ(way_id8699536->ID(), 8699536ull);
 
     EXPECT_EQ(way_id8699536->NodeCount(), 10);
@@ -219,7 +211,7 @@ TEST_F(OpenStreetMapTest, WayByID) {
 
     EXPECT_EQ(way_id8699536->GetAttribute("invalid"), "");
 
-    const auto way_id8706922 = osm.WayByID(8706922ull);
+    const auto way_id8706922 = osm->WayByID(8706922ull);
     EXPECT_EQ(way_id8706922->ID(), 8706922ull);
 
     EXPECT_EQ(way_id8706922->NodeCount(), 3);
@@ -242,5 +234,5 @@ TEST_F(OpenStreetMapTest, WayByID) {
     EXPECT_EQ(way_id8706922->GetAttribute("invalid"), "");
 
     // non-existent way id
-    EXPECT_EQ(osm.WayByID(92831452ull), nullptr);
+    EXPECT_EQ(osm->WayByID(92831452ull), nullptr);
 }
