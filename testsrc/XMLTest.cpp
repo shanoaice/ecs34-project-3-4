@@ -47,201 +47,90 @@ std::string malformed_xml =
 </root>
 )";
 
-SXMLEntity root_begin = {
-    .DType = SXMLEntity::EType::StartElement,
-    .DNameData = "root",
-    .DAttributes = {},
-};
+SXMLEntity root_begin = {SXMLEntity::EType::StartElement, "root", {}};
 
 SXMLEntity regular_element_begin = {
-    .DType = SXMLEntity::EType::StartElement,
-    .DNameData = "element",
-    .DAttributes = {{"attribute", "value"}},
-};
+    SXMLEntity::EType::StartElement, "element", {{"attribute", "value"}}};
 
-SXMLEntity regular_element_cdata = {.DType = SXMLEntity::EType::CharData,
-                                    .DNameData = "Content goes here",
-                                    .DAttributes = {}};
+SXMLEntity regular_element_cdata = {
+    SXMLEntity::EType::CharData, "Content goes here", {}};
 
-SXMLEntity regular_element_end = {
-    .DType = SXMLEntity::EType::EndElement,
-    .DNameData = "element",
-    .DAttributes = {},
-};
+SXMLEntity regular_element_end = {SXMLEntity::EType::EndElement, "element", {}};
 
 SXMLEntity special_characters_begin = {
-    .DType = SXMLEntity::EType::StartElement,
-    .DNameData = "special_characters",
-    .DAttributes = {},
-};
+    SXMLEntity::EType::StartElement, "special_characters", {}};
 
-SXMLEntity less_than_begin = {
-    .DType = SXMLEntity::EType::StartElement,
-    .DNameData = "less_than",
-    .DAttributes = {},
-};
+SXMLEntity less_than_begin = {SXMLEntity::EType::StartElement, "less_than", {}};
 
-SXMLEntity less_than_cdata = {
-    .DType = SXMLEntity::EType::CharData,
-    .DNameData = "<",
-    .DAttributes = {},
-};
+SXMLEntity less_than_cdata = {SXMLEntity::EType::CharData, "<", {}};
 
-SXMLEntity less_than_end = {
-    .DType = SXMLEntity::EType::EndElement,
-    .DNameData = "less_than",
-    .DAttributes = {},
-};
+SXMLEntity less_than_end = {SXMLEntity::EType::EndElement, "less_than", {}};
 
 SXMLEntity greater_than_begin = {
-    .DType = SXMLEntity::EType::StartElement,
-    .DNameData = "greater_than",
-    .DAttributes = {},
-};
+    SXMLEntity::EType::StartElement, "greater_than", {}};
 
-SXMLEntity greater_than_cdata = {
-    .DType = SXMLEntity::EType::CharData,
-    .DNameData = ">",
-    .DAttributes = {},
-};
+SXMLEntity greater_than_cdata = {SXMLEntity::EType::CharData, ">", {}};
 
 SXMLEntity greater_than_end = {
-    .DType = SXMLEntity::EType::EndElement,
-    .DNameData = "greater_than",
-    .DAttributes = {},
-};
+    SXMLEntity::EType::EndElement, "greater_than", {}};
 
 SXMLEntity ampersand_begin = {
-    .DType = SXMLEntity::EType::StartElement,
-    .DNameData = "ampersand",
-    .DAttributes = {{"tag", "&"}},
-};
+    SXMLEntity::EType::StartElement, "ampersand", {{"tag", "&"}}};
 
-SXMLEntity ampersand_cdata = {
-    .DType = SXMLEntity::EType::CharData,
-    .DNameData = "&",
-    .DAttributes = {},
-};
+SXMLEntity ampersand_cdata = {SXMLEntity::EType::CharData, "&", {}};
 
-SXMLEntity ampersand_end = {
-    .DType = SXMLEntity::EType::EndElement,
-    .DNameData = "ampersand",
-    .DAttributes = {},
-};
+SXMLEntity ampersand_end = {SXMLEntity::EType::EndElement, "ampersand", {}};
 
 SXMLEntity apostrophe_begin = {
-    .DType = SXMLEntity::EType::StartElement,
-    .DNameData = "apostrophe",
-    .DAttributes = {{"tag", "'"}},
-};
+    SXMLEntity::EType::StartElement, "apostrophe", {{"tag", "'"}}};
 
-SXMLEntity apostrophe_cdata = {
-    .DType = SXMLEntity::EType::CharData,
-    .DNameData = "'",
-    .DAttributes = {},
-};
+SXMLEntity apostrophe_cdata = {SXMLEntity::EType::CharData, "'", {}};
 
-SXMLEntity apostrophe_end = {
-    .DType = SXMLEntity::EType::EndElement,
-    .DNameData = "apostrophe",
-    .DAttributes = {},
-};
+SXMLEntity apostrophe_end = {SXMLEntity::EType::EndElement, "apostrophe", {}};
 
 SXMLEntity quote_begin = {
-    .DType = SXMLEntity::EType::StartElement,
-    .DNameData = "quote",
-    .DAttributes = {{"tag", "\""}},
-};
+    SXMLEntity::EType::StartElement, "quote", {{"tag", "\""}}};
 
-SXMLEntity quote_cdata = {
-    .DType = SXMLEntity::EType::CharData,
-    .DNameData = "\"",
-    .DAttributes = {},
-};
+SXMLEntity quote_cdata = {SXMLEntity::EType::CharData, "\"", {}};
 
-SXMLEntity quote_end = {
-    .DType = SXMLEntity::EType::EndElement,
-    .DNameData = "quote",
-    .DAttributes = {},
-};
+SXMLEntity quote_end = {SXMLEntity::EType::EndElement, "quote", {}};
 
 SXMLEntity special_characters_end = {
-    .DType = SXMLEntity::EType::EndElement,
-    .DNameData = "special_characters",
-    .DAttributes = {},
-};
+    SXMLEntity::EType::EndElement, "special_characters", {}};
 
 SXMLEntity nested_structure_begin = {
-    .DType = SXMLEntity::EType::StartElement,
-    .DNameData = "nested_structure",
-    .DAttributes = {},
-};
+    SXMLEntity::EType::StartElement, "nested_structure", {}};
 
 SXMLEntity item_begin = {
-    .DType = SXMLEntity::EType::StartElement,
-    .DNameData = "item",
-    .DAttributes = {{"id", "1"}},
-};
+    SXMLEntity::EType::StartElement, "item", {{"id", "1"}}};
 
-SXMLEntity item_cdata = {
-    .DType = SXMLEntity::EType::CharData,
-    .DNameData = "First Item",
-    .DAttributes = {},
-};
+SXMLEntity item_cdata = {SXMLEntity::EType::CharData, "First Item", {}};
 
-SXMLEntity item_end = {
-    .DType = SXMLEntity::EType::EndElement,
-    .DNameData = "item",
-    .DAttributes = {},
-};
+SXMLEntity item_end = {SXMLEntity::EType::EndElement, "item", {}};
 
 SXMLEntity item2_begin = {
-    .DType = SXMLEntity::EType::StartElement,
-    .DNameData = "item",
-    .DAttributes = {{"id", "2"}},
-};
+    SXMLEntity::EType::StartElement, "item", {{"id", "2"}}};
 
-SXMLEntity item2_cdata = {
-    .DType = SXMLEntity::EType::CharData,
-    .DNameData = "Second Item",
-    .DAttributes = {},
-};
+SXMLEntity item2_cdata = {SXMLEntity::EType::CharData, "Second Item", {}};
 
-SXMLEntity item2_end = {
-    .DType = SXMLEntity::EType::EndElement,
-    .DNameData = "item",
-    .DAttributes = {},
-};
+SXMLEntity item2_end = {SXMLEntity::EType::EndElement, "item", {}};
 
 SXMLEntity nested_structure_end = {
-    .DType = SXMLEntity::EType::EndElement,
-    .DNameData = "nested_structure",
-    .DAttributes = {},
+    SXMLEntity::EType::EndElement,
+    "nested_structure",
+    {},
 };
 
 SXMLEntity empty_element_complete = {
-    .DType = SXMLEntity::EType::CompleteElement,
-    .DNameData = "empty_element",
-    .DAttributes = {},
-};
+    SXMLEntity::EType::CompleteElement, "empty_element", {}};
 
 SXMLEntity empty_element_begin = {
-    .DType = SXMLEntity::EType::StartElement,
-    .DNameData = "empty_element",
-    .DAttributes = {},
-};
+    SXMLEntity::EType::StartElement, "empty_element", {}};
 
 SXMLEntity empty_element_end = {
-    .DType = SXMLEntity::EType::EndElement,
-    .DNameData = "empty_element",
-    .DAttributes = {},
-};
+    SXMLEntity::EType::EndElement, "empty_element", {}};
 
-SXMLEntity root_end = {
-    .DType = SXMLEntity::EType::EndElement,
-    .DNameData = "root",
-    .DAttributes = {},
-};
+SXMLEntity root_end = {SXMLEntity::EType::EndElement, "root", {}};
 
 std::vector<SXMLEntity> reference = {
     root_begin,
@@ -389,7 +278,8 @@ TEST(XMLReader, Malformed) {
     CXMLReader Reader(Source);
 
     SXMLEntity entity;
-    while(Reader.ReadEntity(entity)) {}
+    while (Reader.ReadEntity(entity)) {
+    }
 
     EXPECT_FALSE(Reader.ReadEntity(entity));
     EXPECT_FALSE(Reader.End());
@@ -421,29 +311,16 @@ TEST(XMLWriter, FlushTags) {
     auto Sink = std::make_shared<CStringDataSink>();
     CXMLWriter Writer(Sink);
 
-    SXMLEntity entity_begin = {
-        .DType = SXMLEntity::EType::StartElement,
-        .DNameData = "entity",
-        .DAttributes = {},
-    };
+    SXMLEntity entity_begin = {SXMLEntity::EType::StartElement, "entity", {}};
 
-    SXMLEntity entity_attributes_begin = {
-        .DType = SXMLEntity::EType::StartElement,
-        .DNameData = "entity_attributes",
-        .DAttributes = {{"tag", "attributes"}},
-    };
+    SXMLEntity entity_attributes_begin = {SXMLEntity::EType::StartElement,
+                                          "entity_attributes",
+                                          {{"tag", "attributes"}}};
 
-    SXMLEntity entity_end = {
-        .DType = SXMLEntity::EType::EndElement,
-        .DNameData = "entity",
-        .DAttributes = {},
-    };
+    SXMLEntity entity_end = {SXMLEntity::EType::EndElement, "entity", {}};
 
     SXMLEntity entity_attributes_end = {
-        .DType = SXMLEntity::EType::EndElement,
-        .DNameData = "entity_attributes",
-        .DAttributes = {},
-    };
+        SXMLEntity::EType::EndElement, "entity_attributes", {}};
 
     std::vector reference_output = {entity_begin, entity_attributes_begin,
                                     entity_attributes_end, entity_end};
@@ -470,28 +347,14 @@ TEST(XMLWriter, RejectMalformedEntities) {
     CXMLWriter Writer(Sink);
 
     SXMLEntity malformed_begin_entity = {
-        .DType = SXMLEntity::EType::StartElement,
-        .DNameData = "",
-        .DAttributes = {},
-    };
+        SXMLEntity::EType::StartElement, "", {}};
 
-    SXMLEntity malformed_end_entity = {
-        .DType = SXMLEntity::EType::EndElement,
-        .DNameData = "",
-        .DAttributes = {},
-    };
+    SXMLEntity malformed_end_entity = {SXMLEntity::EType::EndElement, "", {}};
 
     SXMLEntity malformed_complete_entity = {
-        .DType = SXMLEntity::EType::CompleteElement,
-        .DNameData = "",
-        .DAttributes = {},
-    };
+        SXMLEntity::EType::CompleteElement, "", {}};
 
-    SXMLEntity malformed_entity_type = {
-        .DType = (SXMLEntity::EType)4,
-        .DNameData = "malformed",
-        .DAttributes = {},
-    };
+    SXMLEntity malformed_entity_type = {(SXMLEntity::EType)4, "malformed", {}};
 
     EXPECT_FALSE(Writer.WriteEntity(malformed_begin_entity));
     EXPECT_FALSE(Writer.WriteEntity(malformed_end_entity));
@@ -504,16 +367,10 @@ TEST(XMLWriter, RejectMismatchedTags) {
     CXMLWriter Writer(Sink);
 
     SXMLEntity mismatched_begin_entity = {
-        .DType = SXMLEntity::EType::StartElement,
-        .DNameData = "mismatched",
-        .DAttributes = {},
-    };
+        SXMLEntity::EType::StartElement, "mismatched", {}};
 
     SXMLEntity mismatched_end_entity = {
-        .DType = SXMLEntity::EType::EndElement,
-        .DNameData = "mismatch",
-        .DAttributes = {},
-    };
+        SXMLEntity::EType::EndElement, "mismatch", {}};
 
     Writer.WriteEntity(mismatched_begin_entity);
 

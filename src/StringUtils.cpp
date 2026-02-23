@@ -1,8 +1,7 @@
 #include "StringUtils.h"
 #include <algorithm>
-#include <ranges>
 #include <string>
-#include <string_view>
+#include <sstream>
 
 using std::string;
 
@@ -88,25 +87,40 @@ std::string Replace(const std::string &str, const std::string &old,
 
 std::vector<std::string> Split(const std::string &str,
                                const std::string &splt) noexcept {
-    std::vector<string> result;
+    if (str.empty()) return std::vector<std::string>();
 
     auto delim = splt == "" ? string(" ") : splt;
+    std::vector<std::string> out;
 
-    std::string_view str_v(str);
-    std::string_view delim_v(delim);
-
-    for (const auto it : std::views::split(str_v, delim_v)) {
-        result.emplace_back(string(std::string_view(it)));
+    std::size_t pos = 0;
+    while (true) {
+        std::size_t next = str.find(delim, pos);
+        if (next == std::string::npos) {
+            out.emplace_back(str.substr(pos));
+            break;
+        }
+        out.emplace_back(str.substr(pos, next - pos));
+        pos = next + delim.size();
     }
-    return result;
+    return out;
 }
 
 std::string Join(const std::string &str,
                  const std::vector<std::string> &vect) noexcept {
-    auto joined_string =
-        std::vector<std::string_view>(vect.cbegin(), vect.cend()) |
-        std::views::join_with(str);
-    return joined_string | std::ranges::to<string>();
+    if (vect.empty()) return "";
+
+    std::ostringstream sstr;
+
+    bool first = true;
+
+    for (const auto &it : vect)
+    {
+        if (!first) sstr << str;
+        sstr << it;
+        first = false;
+    }
+
+    return sstr.str();
 }
 
 std::string ExpandTabs(const std::string &str, int tabsize) noexcept {
@@ -140,7 +154,7 @@ int EditDistance(const std::string &left, const std::string &right,
 }
 
 bool IsAllWhiteSpace(const std::string &s) noexcept {
-    return std::ranges::all_of(s, [](char c) { return std::isspace(c); });
+    return std::all_of(s.cbegin(), s.cend(), [](char c) { return std::isspace(c); });
 }
 
 }; // namespace StringUtils

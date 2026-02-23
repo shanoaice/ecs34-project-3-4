@@ -65,8 +65,10 @@ struct CCSVBusSystem::SImplementation {
     }
 
     std::shared_ptr<SStop> StopByID(const TStopID id) const noexcept {
-        const auto it = std::ranges::find(stops, id, &SStop::DStopID);
-        if (it == stops.end())
+        const auto it =
+            std::find_if(stops.cbegin(), stops.cend(),
+                         [id](const auto &stop) { return stop.ID() == id; });
+        if (it == stops.cend())
             return nullptr;
         return std::make_shared<SStop>(*it);
     }
@@ -80,8 +82,10 @@ struct CCSVBusSystem::SImplementation {
 
     std::shared_ptr<SRoute>
     RouteByName(const std::string &name) const noexcept {
-        const auto it = std::ranges::find(routes, name, &SRoute::DName);
-        if (it == routes.end())
+        const auto it = std::find_if(
+            routes.cbegin(), routes.cend(),
+            [name](const auto &route) { return route->Name() == name; });
+        if (it == routes.cend())
             return nullptr;
         return *it;
     }
@@ -152,7 +156,8 @@ CCSVBusSystem::CCSVBusSystem(const std::shared_ptr<CDSVReader> &stopSource,
                 }
 
                 DImplementation->routes.push_back(
-                    std::make_shared<SImplementation::SRoute>(routeName, std::move(routeStops)));
+                    std::make_shared<SImplementation::SRoute>(
+                        routeName, std::move(routeStops)));
             } else {
                 // Ensure we always progress even if a row is malformed
                 buf.clear();

@@ -1,4 +1,5 @@
 #include "XMLWriter.h"
+#include "DataSink.h"
 #include "StringUtils.h"
 #include "XMLEntity.h"
 #include <expat.h>
@@ -118,6 +119,10 @@ struct CXMLWriter::SImplementation {
         }
 
         return false;
+    }
+
+    explicit SImplementation(std::shared_ptr<CDataSink> sink) {
+        DSink = sink;
     }
 };
 
