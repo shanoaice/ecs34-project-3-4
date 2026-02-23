@@ -39,12 +39,12 @@ test: test_directories cover
 
 cover: $(addprefix $(TESTBINDIR)/, $(TESTS))
 	for test in $^; do ./$$test; done
-	lcov --capture --directory . --output-file $(COVERAGEDIR)/coverage.info --ignore-errors inconsistent,source
+	lcov --capture --directory . --output-file $(COVERAGEDIR)/coverage.info --ignore-errors inconsistent,source,mismatch
 	lcov --remove $(COVERAGEDIR)/coverage.info '/usr/*' '*/testsrc/*' --output-file $(COVERAGEDIR)/coverage.info
 	genhtml $(COVERAGEDIR)/coverage.info --output-directory $(COVERAGEDIR)
 
 library: $(addprefix $(OBJDIR)/, $(addsuffix .o, $(SOURCES)))
-	$(CXX) $(LDFLAGS) $(CXXFLAGS) $(DEFINES) -shared $^ -o $(LIBDIR)/$(LIBRARY_NAME).so
+	$(CXX) $(CXXFLAGS) $(DEFINES) -shared $^ -o $(LIBDIR)/$(LIBRARY_NAME).so $(LDFLAGS)
 
 $(OBJDIR)/%.o: $(SOURCE_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(DEFINES) $(INCLUDE) -c $< -o $@
@@ -56,7 +56,7 @@ $(TESTOBJDIR)/%.o: $(TESTSOURCE_DIR)/%.cpp
 	$(CXX) $(TEST_CXXFLAGS) $(DEFINES) $(INCLUDE) -c $< -o $@
 
 $(addprefix $(TESTBINDIR)/, $(TESTS)): $(TESTBINDIR)/%: $(TESTOBJDIR)/%.o $(addprefix $(TESTOBJDIR)/, $(addsuffix .o, $(SOURCES)))
-	$(CXX) $(TEST_LDFLAGS) $(TEST_CXXFLAGS) $(DEFINES) $^ -o $@
+	$(CXX) $(TEST_CXXFLAGS) $(DEFINES) $^ -o $@ $(TEST_LDFLAGS)
 
 directories: $(OBJDIR) $(LIBDIR)
 
