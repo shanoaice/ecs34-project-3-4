@@ -21,11 +21,11 @@ CFLAGS   += -O2
 else
 CFLAGS   += -g -O0
 endif
-CXXFLAGS += $(CFLAGS) -std=c++23
+CXXFLAGS += $(CFLAGS) -std=c++17
 LDFLAGS  += -fuse-ld=$(LD) -lexpat
 
 TEST_CFLAGS   := -Wall -Werror -Wpedantic -g -O0 --coverage
-TEST_CXXFLAGS := $(TEST_CFLAGS) -std=c++23
+TEST_CXXFLAGS := $(TEST_CFLAGS) -std=c++17
 TEST_LDFLAGS  := -fuse-ld=$(LD) -lgcov -lpthread -lgtest -lgtest_main -lexpat
 
 SOURCES := StringUtils StringDataSink StringDataSource DSVWriter DSVReader XMLReader XMLWriter CSVBusSystem OpenStreetMap
