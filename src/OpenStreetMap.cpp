@@ -1,8 +1,8 @@
 #include "OpenStreetMap.h"
-
 #include <algorithm>
 #include <unordered_map>
 #include <utility>
+
 // define a constant to handle invalid node id
 const CStreetMap::TNodeID CStreetMap::InvalidNodeID;
 
@@ -113,6 +113,10 @@ struct COpenStreetMap::SImplementation {
         SXMLEntity TempEntity;
         // loop until find <node> start element
         while (src->ReadEntity(TempEntity)) {
+            // when reach osm end element, return
+            if (TempEntity.DType == SXMLEntity::EType::EndElement && TempEntity.DNameData == DOSMTag) {
+                return true;
+            }
             if (TempEntity.DType == SXMLEntity::EType::StartElement) {
                 // if it is start, but not <node>, pass to nextentity
                 if (TempEntity.DNameData != DNodeTag) {
@@ -141,6 +145,13 @@ struct COpenStreetMap::SImplementation {
                                     SXMLEntity::EType::EndElement &&
                                 SubEntity.DNameData == DNodeTag) {
                                 break;
+                            }
+                            // when get way, pass it to nextentity and return
+                            if (SubEntity.DType == SXMLEntity::EType::StartElement && SubEntity.DNameData == DWayTag) {
+                                nextentity = SubEntity;
+                                DNodesByIndex.push_back(NewNode);
+                                DNodesByID[NewNode->DID] = NewNode;
+                                return true; 
                             }
                             // when reach start tag, store in DAttributes
                             if (SubEntity.DType ==
@@ -232,6 +243,12 @@ struct COpenStreetMap::SImplementation {
                         if (SubEntity.DType == SXMLEntity::EType::EndElement &&
                             SubEntity.DNameData == DWayTag) {
                             break;
+                        }
+                        // if reach end element osm
+                        if (SubEntity.DType == SXMLEntity::EType::EndElement && SubEntity.DNameData == DOSMTag) {
+                            DWaysByIndex.push_back(NewWay);
+                            DWaysByID[NewWay->DID] = NewWay;
+                            return true;
                         }
                         // if start element
                         if (SubEntity.DType ==
