@@ -123,16 +123,21 @@ CCSVBusSystem::CCSVBusSystem(const std::shared_ptr<CDSVReader> &stopSource,
 
     std::vector<std::string> buf;
     if (stopSource->ReadRow(buf)) { // Skip header
+        buf.clear();
         while (stopSource->ReadRow(buf)) {
             if (buf.size() >= 2) {
                 // emplace_back avoids extra alloc
                 DImplementation->stops.emplace_back(std::stoul(buf[0]),
                                                     std::stoul(buf[1]));
             }
+            buf.clear();
         }
     }
 
+    buf.clear();
+
     if (routeSource->ReadRow(buf)) { // Skip header
+        buf.clear();
         bool hasData = routeSource->ReadRow(buf);
         while (hasData) {
             if (buf.size() >= 2) {
@@ -142,6 +147,7 @@ CCSVBusSystem::CCSVBusSystem(const std::shared_ptr<CDSVReader> &stopSource,
                 // Group all consecutive rows with the same route name
                 while (hasData && buf.size() >= 2 && buf[0] == routeName) {
                     routeStops.push_back(std::stoul(buf[1]));
+                    buf.clear();
                     hasData = routeSource->ReadRow(buf);
                 }
 
@@ -149,6 +155,7 @@ CCSVBusSystem::CCSVBusSystem(const std::shared_ptr<CDSVReader> &stopSource,
                     std::make_shared<SImplementation::SRoute>(routeName, std::move(routeStops)));
             } else {
                 // Ensure we always progress even if a row is malformed
+                buf.clear();
                 hasData = routeSource->ReadRow(buf);
             }
         }
