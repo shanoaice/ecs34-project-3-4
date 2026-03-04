@@ -10,11 +10,12 @@ LIBDIR=./lib
 TESTOBJDIR=./testobj
 TESTBINDIR=./testbin
 COVERAGEDIR=./htmlcov
+DATA_DIR:=$(shell pwd)/data
 
 LIBRARY_NAME := libecs34proj3
 
 INCLUDE  += -I $(INCLUDE_DIR)
-DEFINES  +=
+DEFINES  += -DDATA_DIR=$(DATA_DIR)
 CFLAGS   += -Wall -Werror -Wpedantic -fPIC
 ifeq ($(RELEASE),1)
 CFLAGS   += -O2

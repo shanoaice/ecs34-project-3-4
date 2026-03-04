@@ -6,13 +6,21 @@
 #include <gtest/gtest.h>
 #include <memory>
 
+#ifndef DATA_DIR
+#define DATA_DIR "./data"
+#endif
+
+#define DATA_DIR_STR_(x) #x
+#define DATA_DIR_STR(x) DATA_DIR_STR_(x)
+
 class CSVBusSystemTest : public ::testing::Test {
   protected:
     std::shared_ptr<CDSVReader> StopReader, RouteReader;
     CSVBusSystemTest() {
         std::ifstream routeDataFile, stopDataFile;
-        routeDataFile.open("./data/routes.csv");
-        stopDataFile.open("./data/stops.csv");
+        std::string dataDir = DATA_DIR_STR(DATA_DIR);
+        routeDataFile.open(dataDir + "/routes.csv");
+        stopDataFile.open(dataDir + "/stops.csv");
 
         auto routeDataSource = std::make_shared<CStringDataSource>(
             std::string(std::istreambuf_iterator<char>(routeDataFile),
