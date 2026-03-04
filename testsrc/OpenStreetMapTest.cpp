@@ -4,11 +4,19 @@
 #include <fstream>
 #include <gtest/gtest.h>
 
+#ifndef DATA_DIR
+#define DATA_DIR "./data"
+#endif
+
+#define DATA_DIR_STR_(x) #x
+#define DATA_DIR_STR(x) DATA_DIR_STR_(x)
+
 class OpenStreetMapTest : public ::testing::Test {
   protected:
     OpenStreetMapTest() {
         std::ifstream osmDataFile;
-        osmDataFile.open("./data/davis.osm");
+        std::string dataDir = DATA_DIR_STR(DATA_DIR);
+        osmDataFile.open(dataDir + "/davis.osm");
         std::string osmData{std::istreambuf_iterator<char>(osmDataFile),
                             std::istreambuf_iterator<char>()};
         osmDataFile.close();
@@ -25,13 +33,9 @@ class OpenStreetMapTest : public ::testing::Test {
     ~OpenStreetMapTest() override = default;
 };
 
-TEST_F(OpenStreetMapTest, NodeCount) {
-    EXPECT_EQ(osm->NodeCount(), 10259);
-}
+TEST_F(OpenStreetMapTest, NodeCount) { EXPECT_EQ(osm->NodeCount(), 10259); }
 
-TEST_F(OpenStreetMapTest, WayCount) {
-    EXPECT_EQ(osm->WayCount(), 1644);
-}
+TEST_F(OpenStreetMapTest, WayCount) { EXPECT_EQ(osm->WayCount(), 1644); }
 
 TEST_F(OpenStreetMapTest, NodeByIndex) {
     // simple node
@@ -180,7 +184,8 @@ TEST_F(OpenStreetMapTest, WayByID) {
 
     EXPECT_EQ(way_id8699536->GetNodeID(0), 258592863ull);
     // idx >= nodeCount
-    EXPECT_EQ(way_id8699536->GetNodeID(way_id8699536->NodeCount()), CStreetMap::InvalidNodeID);
+    EXPECT_EQ(way_id8699536->GetNodeID(way_id8699536->NodeCount()),
+              CStreetMap::InvalidNodeID);
 
     EXPECT_EQ(way_id8699536->AttributeCount(), 6);
 
@@ -217,7 +222,8 @@ TEST_F(OpenStreetMapTest, WayByID) {
     EXPECT_EQ(way_id8706922->NodeCount(), 3);
 
     EXPECT_EQ(way_id8706922->GetNodeID(0), 62321892ull);
-    EXPECT_EQ(way_id8706922->GetNodeID(way_id8706922->NodeCount()), CStreetMap::InvalidNodeID);
+    EXPECT_EQ(way_id8706922->GetNodeID(way_id8706922->NodeCount()),
+              CStreetMap::InvalidNodeID);
 
     EXPECT_EQ(way_id8706922->AttributeCount(), 1);
 
