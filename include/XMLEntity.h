@@ -1,56 +1,50 @@
 #ifndef XMLENTITY_H
 #define XMLENTITY_H
 
-#include <string>
 #include <utility>
+#include <string>
 #include <vector>
 
-using TAttribute = std::pair<std::string, std::string>;
-using TAttributes = std::vector<TAttribute>;
+using TAttribute = std::pair< std::string, std::string >;
+using TAttributes = std::vector< TAttribute >;
 
-struct SXMLEntity {
-    enum class EType { StartElement, EndElement, CharData, CompleteElement };
+struct SXMLEntity{    
+    enum class EType{StartElement, EndElement, CharData, CompleteElement};
     EType DType;
     std::string DNameData;
     TAttributes DAttributes;
-
-    bool AttributeExists(const std::string &name) const {
-        for (auto &Attribute : DAttributes) {
-            if (std::get<0>(Attribute) == name) {
-                return true;
+    
+    bool AttributeExists(const std::string &name) const{
+        for(auto &Attribute : DAttributes){
+            if(std::get<0>(Attribute) == name){
+                return true;   
             }
         }
         return false;
     };
-
-    bool operator==(const SXMLEntity &other) const {
-        return DType == other.DType && DNameData == other.DNameData &&
-               DAttributes == other.DAttributes;
-    };
-
-    std::string AttributeValue(const std::string &name) const {
-        for (auto &Attribute : DAttributes) {
-            if (std::get<0>(Attribute) == name) {
-                return std::get<1>(Attribute);
+    
+    std::string AttributeValue(const std::string &name) const{
+        for(auto &Attribute : DAttributes){
+            if(std::get<0>(Attribute) == name){
+                return std::get<1>(Attribute);   
             }
         }
         return std::string();
     };
-
-    bool SetAttribute(const std::string &name, const std::string &value) {
-        if (name.empty()) {
-            return false;
+    
+    bool SetAttribute(const std::string &name, const std::string &value){
+        if(name.empty()){
+            return false;   
         }
-        for (std::vector<TAttribute>::size_type Index = 0;
-             Index < DAttributes.size(); Index++) {
-            if (std::get<0>(DAttributes[Index]) == name) {
-                DAttributes[Index] = std::make_pair(name, value);
+        for(std::vector< TAttribute >::size_type Index = 0; Index < DAttributes.size(); Index++){
+            if(std::get<0>(DAttributes[Index]) == name){
+                DAttributes[Index] = std::make_pair(name,value);
                 return true;
             }
         }
-        DAttributes.push_back(std::make_pair(name, value));
+        DAttributes.push_back(std::make_pair(name,value));
         return true;
     };
 };
-
+   
 #endif

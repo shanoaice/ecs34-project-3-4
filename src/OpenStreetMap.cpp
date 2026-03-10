@@ -14,12 +14,12 @@ struct COpenStreetMap::SImplementation {
 
     struct SNode : public CStreetMap::SNode {
         TNodeID DID = InvalidNodeID;
-        TLocation DLocation;
+        SLocation DLocation;
         std::vector<std::pair<std::string, std::string>> DAttributes;
         ~SNode() override = default;
         TNodeID ID() const noexcept override { return DID; }
 
-        TLocation Location() const noexcept override { return DLocation; }
+        SLocation Location() const noexcept override { return DLocation; }
 
         std::size_t AttributeCount() const noexcept override {
             return DAttributes.size();

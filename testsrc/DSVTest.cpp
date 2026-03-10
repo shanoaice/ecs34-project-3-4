@@ -1,203 +1,107 @@
+#include <gtest/gtest.h>
 #include "DSVReader.h"
 #include "DSVWriter.h"
-#include "StringDataSink.h"
+#include "StringUtils.h"
 #include "StringDataSource.h"
-#include <gtest/gtest.h>
-#include <memory>
-#include <string>
-#include <vector>
+#include "StringDataSink.h"
 
-std::vector<std::string> row1 = {"Hello", "World"};
-std::vector<std::string> row2 = {"Foo|WithDelim", "Bar,WithComma"};
-std::vector<std::string> row3 = {"Baz\nWithNewline", R"(Qux"WithQuote)"};
+TEST(DSVWriter, EmptyTest){
+    auto DSVSink = std::make_shared<CStringDataSink>();
+    CDSVWriter DSVWriter(DSVSink,',');
 
-TEST(DSVWriter, Comma) {
-    auto Sink = std::make_shared<CStringDataSink>();
-    CDSVWriter Writer(Sink, ',');
-
-    Writer.WriteRow(row1);
-    EXPECT_EQ(Sink->String(), "Hello,World\n");
-
-    Writer.WriteRow(row2);
-    EXPECT_EQ(Sink->String(), R"(Hello,World
-Foo|WithDelim,"Bar,WithComma"
-)");
-
-    Writer.WriteRow(row3);
-    EXPECT_EQ(Sink->String(), R"(Hello,World
-Foo|WithDelim,"Bar,WithComma"
-"Baz
-WithNewline","Qux""WithQuote"
-)");
+    EXPECT_EQ(DSVSink->String(),"");
 }
 
-TEST(DSVWriter, CommaQuoted) {
-    auto SinkQuoted = std::make_shared<CStringDataSink>();
-    CDSVWriter QuotedWriter(SinkQuoted, ',', true);
-    QuotedWriter.WriteRow(row1);
-    EXPECT_EQ(SinkQuoted->String(), R"("Hello","World"
-)");
+TEST(DSVWriter, SimpleTest){
+    auto DSVSink = std::make_shared<CStringDataSink>();
+    CDSVWriter DSVWriter(DSVSink,',');
+    std::vector<std::string> StringVector = {"How", "are", "you", "doing?"};
 
-    QuotedWriter.WriteRow(row2);
-    EXPECT_EQ(SinkQuoted->String(), R"("Hello","World"
-"Foo|WithDelim","Bar,WithComma"
-)");
-
-    QuotedWriter.WriteRow(row3);
-    EXPECT_EQ(SinkQuoted->String(), R"("Hello","World"
-"Foo|WithDelim","Bar,WithComma"
-"Baz
-WithNewline","Qux""WithQuote"
-)");
+    EXPECT_TRUE(DSVWriter.WriteRow(StringVector));
+    EXPECT_EQ(DSVSink->String(),StringUtils::Join(",",StringVector));
 }
 
-TEST(DSVWriter, Delim) {
-    auto SinkDelim = std::make_shared<CStringDataSink>();
-    CDSVWriter DelimWriter(SinkDelim, '|');
-    DelimWriter.WriteRow(row1);
-    EXPECT_EQ(SinkDelim->String(), "Hello|World\n");
+TEST(DSVWriter, NewlineTest){
+    auto DSVSink = std::make_shared<CStringDataSink>();
+    CDSVWriter DSVWriter(DSVSink,',');
+    std::vector<std::string> StringVector = {"How", "are", "you", "doing?"};
 
-    DelimWriter.WriteRow(row2);
-    EXPECT_EQ(SinkDelim->String(), R"(Hello|World
-"Foo|WithDelim"|Bar,WithComma
-)");
-
-    DelimWriter.WriteRow(row3);
-    EXPECT_EQ(SinkDelim->String(), R"(Hello|World
-"Foo|WithDelim"|Bar,WithComma
-"Baz
-WithNewline"|"Qux""WithQuote"
-)");
+    EXPECT_TRUE(DSVWriter.WriteRow(StringVector));
+    std::string JoinedRow = StringUtils::Join(",",StringVector);
+    EXPECT_TRUE(DSVWriter.WriteRow(StringVector));
+    EXPECT_EQ(DSVSink->String(),StringUtils::Join("\n",{JoinedRow,JoinedRow}));
 }
 
-TEST(DSVWriter, DelimQuoted) {
-    auto SinkDelimQuoted = std::make_shared<CStringDataSink>();
-    CDSVWriter DelimQuotedWriter(SinkDelimQuoted, '|', true);
-    DelimQuotedWriter.WriteRow(row1);
-    EXPECT_EQ(SinkDelimQuoted->String(), R"("Hello"|"World"
-)");
+TEST(DSVWriter, QuotingTest){
+    auto DSVSink = std::make_shared<CStringDataSink>();
+    CDSVWriter DSVWriter(DSVSink,',');
+    std::vector<std::string> StringVector = {"1,000", "My name is \"Bob\"!", "3.3"};
 
-    DelimQuotedWriter.WriteRow(row2);
-    EXPECT_EQ(SinkDelimQuoted->String(), R"("Hello"|"World"
-"Foo|WithDelim"|"Bar,WithComma"
-)");
-
-    DelimQuotedWriter.WriteRow(row3);
-    EXPECT_EQ(SinkDelimQuoted->String(), R"("Hello"|"World"
-"Foo|WithDelim"|"Bar,WithComma"
-"Baz
-WithNewline"|"Qux""WithQuote"
-)");
+    EXPECT_TRUE(DSVWriter.WriteRow(StringVector));
+    EXPECT_EQ(DSVSink->String(),"\"1,000\",\"My name is \"\"Bob\"\"!\",3.3");
 }
 
-TEST(DSVReader, Comma) {
-    auto Sink = std::make_shared<CStringDataSink>();
-    CDSVWriter Writer(Sink, ',');
+TEST(DSVWriter, QuoteAllTest){
+    auto DSVSink = std::make_shared<CStringDataSink>();
+    CDSVWriter DSVWriter(DSVSink,',',true);
+    std::vector<std::string> StringVector = {"a","b","c","d"};
 
-    Writer.WriteRow(row1);
-    Writer.WriteRow(row2);
-    Writer.WriteRow(row3);
-
-    auto Source = std::make_shared<CStringDataSource>(
-        std::string(Sink->String().cbegin(),
-                    Sink->String().cend() - 2)); // strip away the final newline
-    CDSVReader Reader(Source, ',');
-
-    std::vector<std::string> read_row1;
-    std::vector<std::string> read_row2;
-    std::vector<std::string> read_row3;
-
-    Reader.ReadRow(read_row1);
-    Reader.ReadRow(read_row2);
-    Reader.ReadRow(read_row3);
-
-    EXPECT_EQ(read_row1, row1);
-    EXPECT_EQ(read_row2, row2);
-    EXPECT_EQ(read_row3, row3);
-
-    EXPECT_TRUE(Reader.End());
+    EXPECT_TRUE(DSVWriter.WriteRow(StringVector));
+    EXPECT_EQ(DSVSink->String(),"\"a\",\"b\",\"c\",\"d\"");
 }
 
-TEST(DSVReader, CommaQuoted) {
-    auto SinkQuoted = std::make_shared<CStringDataSink>();
-    CDSVWriter Writer(SinkQuoted, ',', true);
+TEST(DSVReader, EmptyTest){
+    auto DSVSource = std::make_shared<CStringDataSource>("");
+    CDSVReader DSVReader(DSVSource,',');
+    std::vector<std::string> StringVector;
 
-    Writer.WriteRow(row1);
-    Writer.WriteRow(row2);
-    Writer.WriteRow(row3);
-
-    auto Source = std::make_shared<CStringDataSource>(std::string(
-        SinkQuoted->String().cbegin(),
-        SinkQuoted->String().cend() - 2)); // strip away the final newline
-    CDSVReader Reader(Source, ',');
-
-    std::vector<std::string> read_row1;
-    std::vector<std::string> read_row2;
-    std::vector<std::string> read_row3;
-
-    Reader.ReadRow(read_row1);
-    Reader.ReadRow(read_row2);
-    Reader.ReadRow(read_row3);
-
-    EXPECT_EQ(read_row1, row1);
-    EXPECT_EQ(read_row2, row2);
-    EXPECT_EQ(read_row3, row3);
-
-    EXPECT_TRUE(Reader.End());
+    EXPECT_FALSE(DSVReader.ReadRow(StringVector));
+    EXPECT_TRUE(DSVReader.End());
 }
 
-TEST(DSVReader, Delim) {
-    auto SinkDelim = std::make_shared<CStringDataSink>();
-    CDSVWriter Writer(SinkDelim, '|');
+TEST(DSVReader, SimpleTest){
+    auto DSVSource = std::make_shared<CStringDataSource>("How,are,you,doing?");
+    CDSVReader DSVReader(DSVSource,',');
+    std::vector<std::string> StringVector;
 
-    Writer.WriteRow(row1);
-    Writer.WriteRow(row2);
-    Writer.WriteRow(row3);
-
-    auto Source = std::make_shared<CStringDataSource>(std::string(
-        SinkDelim->String().cbegin(),
-        SinkDelim->String().cend() - 2)); // strip away the final newline
-    CDSVReader Reader(Source, '|');
-
-    std::vector<std::string> read_row1;
-    std::vector<std::string> read_row2;
-    std::vector<std::string> read_row3;
-
-    Reader.ReadRow(read_row1);
-    Reader.ReadRow(read_row2);
-    Reader.ReadRow(read_row3);
-
-    EXPECT_EQ(read_row1, row1);
-    EXPECT_EQ(read_row2, row2);
-    EXPECT_EQ(read_row3, row3);
-
-    EXPECT_TRUE(Reader.End());
+    EXPECT_TRUE(DSVReader.ReadRow(StringVector));
+    EXPECT_TRUE(DSVReader.End());
+    ASSERT_EQ(StringVector.size(),4);
+    EXPECT_EQ(StringVector[0],"How");
+    EXPECT_EQ(StringVector[1],"are");
+    EXPECT_EQ(StringVector[2],"you");
+    EXPECT_EQ(StringVector[3],"doing?");
 }
 
-TEST(DSVReader, DelimQuoted) {
-    auto SinkDelimQuoted = std::make_shared<CStringDataSink>();
-    CDSVWriter Writer(SinkDelimQuoted, '|', true);
+TEST(DSVReader, NewlineTest){
+    auto DSVSource = std::make_shared<CStringDataSource>("How,are,you,doing?\nI'm,doing,great!");
+    CDSVReader DSVReader(DSVSource,',');
+    std::vector<std::string> StringVector;
 
-    Writer.WriteRow(row1);
-    Writer.WriteRow(row2);
-    Writer.WriteRow(row3);
+    EXPECT_TRUE(DSVReader.ReadRow(StringVector));
+    EXPECT_FALSE(DSVReader.End());
+    ASSERT_EQ(StringVector.size(),4);
+    EXPECT_EQ(StringVector[0],"How");
+    EXPECT_EQ(StringVector[1],"are");
+    EXPECT_EQ(StringVector[2],"you");
+    EXPECT_EQ(StringVector[3],"doing?");
+    EXPECT_TRUE(DSVReader.ReadRow(StringVector));
+    ASSERT_EQ(StringVector.size(),3);
+    EXPECT_EQ(StringVector[0],"I'm");
+    EXPECT_EQ(StringVector[1],"doing");
+    EXPECT_EQ(StringVector[2],"great!");
+    EXPECT_TRUE(DSVReader.End());
+}
 
-    auto Source = std::make_shared<CStringDataSource>(std::string(
-        SinkDelimQuoted->String().cbegin(),
-        SinkDelimQuoted->String().cend() - 2)); // strip away the final newline
-    CDSVReader Reader(Source, '|');
+TEST(DSVReader, QuotingTest){
+    auto DSVSource = std::make_shared<CStringDataSource>("\"1,000\",\"My name is \"\"Bob\"\"!\",3.3");
+    CDSVReader DSVReader(DSVSource,',');
+    std::vector<std::string> StringVector;
 
-    std::vector<std::string> read_row1;
-    std::vector<std::string> read_row2;
-    std::vector<std::string> read_row3;
-
-    Reader.ReadRow(read_row1);
-    Reader.ReadRow(read_row2);
-    Reader.ReadRow(read_row3);
-
-    EXPECT_EQ(read_row1, row1);
-    EXPECT_EQ(read_row2, row2);
-    EXPECT_EQ(read_row3, row3);
-
-    EXPECT_TRUE(Reader.End());
+    EXPECT_TRUE(DSVReader.ReadRow(StringVector));
+    EXPECT_TRUE(DSVReader.End());
+    ASSERT_EQ(StringVector.size(),3);
+    EXPECT_EQ(StringVector[0],"1,000");
+    EXPECT_EQ(StringVector[1],"My name is \"Bob\"!");
+    EXPECT_EQ(StringVector[2],"3.3");    
 }

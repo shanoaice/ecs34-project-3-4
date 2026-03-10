@@ -10,6 +10,7 @@ LIBDIR=./lib
 TESTOBJDIR=./testobj
 TESTBINDIR=./testbin
 COVERAGEDIR=./htmlcov
+BINDIR=./bin
 DATA_DIR:=$(shell pwd)/data
 
 LIBRARY_NAME := libecs34proj3
@@ -29,12 +30,13 @@ TEST_CFLAGS   := -Wall -Werror -Wpedantic -g -O0 --coverage
 TEST_CXXFLAGS := $(TEST_CFLAGS) -std=c++17
 TEST_LDFLAGS  := -fuse-ld=$(LD) -lgcov -lpthread -lgtest -lgtest_main -lexpat
 
-SOURCES := StringUtils StringDataSink StringDataSource DSVWriter DSVReader XMLReader XMLWriter CSVBusSystem OpenStreetMap
+SOURCES := StringUtils StringDataSink StringDataSource DSVWriter DSVReader XMLReader XMLWriter CSVBusSystem OpenStreetMap GeographicUtils KMLWriter FileDataFactory FileDataSource StandardDataSource FileDataSink StandardErrorDataSink StandardDataSink StringDataSource StringDataSink
+BINARIES := speedtest kmlout
 TESTS := StringUtilsTest StringDataSinkTest StringDataSourceTest DSVTest XMLTest CSVBusSystemTest OpenStreetMapTest
 
 .PHONY: all directories test_directories test clean
 
-all: directories library test
+all: directories binaries library test
 
 test: test_directories cover
 
@@ -46,6 +48,14 @@ cover: $(addprefix $(TESTBINDIR)/, $(TESTS))
 
 library: $(addprefix $(OBJDIR)/, $(addsuffix .o, $(SOURCES)))
 	$(CXX) $(CXXFLAGS) $(DEFINES) -shared $^ -o $(LIBDIR)/$(LIBRARY_NAME).so $(LDFLAGS)
+
+$(BINDIR)/speedtest: $(OBJDIR)/Speedtest.o $(addprefix $(OBJDIR)/, $(addsuffix .o, $(SOURCES)))
+	$(CXX) $(CXXFLAGS) $(DEFINES) $^ -o $@ $(LDFLAGS) -lpthread
+
+$(BINDIR)/kmlout: $(OBJDIR)/KMLOut.o $(addprefix $(OBJDIR)/, $(addsuffix .o, $(SOURCES)))
+	$(CXX) $(CXXFLAGS) $(DEFINES) $^ -o $@ $(LDFLAGS) -lpthread
+
+binaries: $(addprefix $(BINDIR)/, $(BINARIES))
 
 $(OBJDIR)/%.o: $(SOURCE_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(DEFINES) $(INCLUDE) -c $< -o $@
@@ -59,13 +69,16 @@ $(TESTOBJDIR)/%.o: $(TESTSOURCE_DIR)/%.cpp
 $(addprefix $(TESTBINDIR)/, $(TESTS)): $(TESTBINDIR)/%: $(TESTOBJDIR)/%.o $(addprefix $(TESTOBJDIR)/, $(addsuffix .o, $(SOURCES)))
 	$(CXX) $(TEST_CXXFLAGS) $(DEFINES) $^ -o $@ $(TEST_LDFLAGS)
 
-directories: $(OBJDIR) $(LIBDIR)
+directories: $(OBJDIR) $(LIBDIR) $(BINDIR)
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
 $(LIBDIR):
 	mkdir -p $(LIBDIR)
+
+$(BINDIR):
+	mkdir -p $(BINDIR)
 
 test_directories: $(TESTBINDIR) $(TESTOBJDIR) $(COVERAGEDIR)
 
@@ -79,4 +92,4 @@ $(COVERAGEDIR):
 	mkdir -p $(COVERAGEDIR)
 
 clean:
-	rm -rf $(OBJDIR) $(TESTOBJDIR) $(TESTBINDIR) $(COVERAGEDIR) $(LIBDIR)
+	rm -rf $(OBJDIR) $(TESTOBJDIR) $(TESTBINDIR) $(COVERAGEDIR) $(LIBDIR) $(BINDIR)
