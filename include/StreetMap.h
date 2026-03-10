@@ -11,15 +11,24 @@ class CStreetMap{
     public:
         using TNodeID = uint64_t;
         using TWayID = uint64_t;
-        using TLocation = std::pair<double, double>;
+        struct SLocation{
+            double DLatitude;
+            double DLongitude;  
+            SLocation() = default;
+            SLocation(const CStreetMap::SLocation &loc) = default;
+            SLocation(double latitude, double longitude): DLatitude(latitude), DLongitude(longitude){};
+            bool operator==(const SLocation &loc) const{
+                return DLatitude == loc.DLatitude && DLongitude == loc.DLongitude;
+            };
+        };
 
-        static const TNodeID InvalidNodeID = std::numeric_limits<TNodeID>::max();
-        static const TWayID InvalidWayID = std::numeric_limits<TWayID>::max();
+        inline static constexpr TNodeID InvalidNodeID = std::numeric_limits<TNodeID>::max();
+        inline static constexpr TWayID InvalidWayID = std::numeric_limits<TWayID>::max();
 
         struct SNode{
             virtual ~SNode(){};
             virtual TNodeID ID() const noexcept = 0;
-            virtual TLocation Location() const noexcept = 0;
+            virtual SLocation Location() const noexcept = 0;
             virtual std::size_t AttributeCount() const noexcept = 0;
             virtual std::string GetAttributeKey(std::size_t index) const noexcept = 0;
             virtual bool HasAttribute(const std::string &key) const noexcept = 0;
