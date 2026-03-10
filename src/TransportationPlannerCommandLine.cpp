@@ -1,5 +1,6 @@
 #include "TransportationPlannerCommandLine.h"
 #include "StringUtils.h"
+#include "GeographicUtils.h"
 #include <iomanip>
 #include <cmath>
 
@@ -12,6 +13,9 @@ struct CTransportationPlannerCommandLine::SImplementation {
 
     std::vector<CTransportationPlanner::TNodeID> LastShortestPath;
     std::vector<CTransportationPlanner::TTripStep> LastFastestPath;
+    std::string LastStartNodeID;
+    std::string LastEndNodeID;
+
     double LastPathValue = 0.0;
     bool LastWasFastest = false;
     bool HasValidPath = false;
@@ -34,31 +38,33 @@ struct CTransportationPlannerCommandLine::SImplementation {
     }
 
     std::string FormatLocation(double lat, double lon) {
-        // format lat, N is positive, S is negative
-        char NS = 'N'; 
-        if (lat < 0) {
-            NS = 'S';
-        }
-        double absLat = std::abs(lat);
-        int latD = (int)absLat;
-        int latM = (int)((absLat - latD) * 60);
-        int latS = (int)std::round(((absLat - latD) * 60 - latM) * 60);
-        std::string s1;
-        s1 = std::to_string(latD) + "d " + std::to_string(latM) + "' " + std::to_string(latS) + "\" " + NS;
-
-        // format lon, E is positive, W is negative
-        char EW = 'E';
-        if (lon < 0) {
-            EW = 'W';
-        }
-        double absLon = std::abs(lon);
-        int lonD = (int)absLon;
-        int lonM = (int)((absLon - lonD) * 60);
-        int lonS = (int)std::round(((absLon - lonD) * 60 - lonM) * 60);
-        std::string s2;
-        s2 = std::to_string(lonD) + "d " + std::to_string(lonM) + "' " + std::to_string(lonS) + "\" " + EW;
-        return s1 + ", " + s2;
+        CStreetMap::SLocation loc(lat, lon);
+        return SGeographicUtils::ConvertLLToDMS(loc);
     }
+    //     // format lat, N is positive, S is negative
+    //     char NS = 'N'; 
+    //     if (lat < 0) {
+    //         NS = 'S';
+    //     }
+    //     double absLat = std::abs(lat);
+    //     int latD = (int)absLat;
+    //     int latM = (int)((absLat - latD) * 60);
+    //     int latS = (int)std::round(((absLat - latD) * 60 - latM) * 60);
+    //     std::string s1;
+    //     s1 = std::to_string(latD) + "d " + std::to_string(latM) + "' " + std::to_string(latS) + "\" " + NS;
+
+    //     // format lon, E is positive, W is negative
+    //     char EW = 'E';
+    //     if (lon < 0) {
+    //         EW = 'W';
+    //     }
+    //     double absLon = std::abs(lon);
+    //     int lonD = (int)absLon;
+    //     int lonM = (int)((absLon - lonD) * 60);
+    //     int lonS = (int)std::round(((absLon - lonD) * 60 - lonM) * 60);
+    //     std::string s2;
+    //     s2 = std::to_string(lonD) + "d " + std::to_string(lonM) + "' " + std::to_string(lonS) + "\" " + EW;
+    //     return s1 + ", " + s2;
 
     // format one number with hour unit into: x hour, x minute, x second
     std::string FormatTime(double hours) {
@@ -177,6 +183,8 @@ struct CTransportationPlannerCommandLine::SImplementation {
                         // if value returned is not -1, means got the distance 
                         if (d != -1.0) {
                             HasValidPath = true; 
+                            LastStartNodeID = words[1];
+                            LastEndNodeID = words[2];
                             LastWasFastest = false;
                             LastPathValue = d;
                             char buffer[64];
@@ -209,6 +217,8 @@ struct CTransportationPlannerCommandLine::SImplementation {
                         if (t != -1.0) {
                             HasValidPath = true; 
                             LastWasFastest = true;
+                            LastStartNodeID = words[1];
+                            LastEndNodeID = words[2];
                             LastPathValue = t;
                             // format the time
                             std::string formated_t = FormatTime(t);
@@ -248,12 +258,9 @@ struct CTransportationPlannerCommandLine::SImplementation {
                 }
                 else {
                     // prepare file name
-                    // startID_endID_hr.csv
-                    std::string startID = words[1];
-                    std::string endID = words[2];
                     std::string val_str = std::to_string(LastPathValue); // convert value to string
-                    // startID_endID_hr.csv
-                    std::string filename = startID + "_" + endID + "_" + val_str + "hr.csv";
+                    // LastStartNodeID_LastEndNodeID_hr.csv
+                    std::string filename = LastStartNodeID + "_" + LastEndNodeID + "_" + std::to_string(LastPathValue) + "hr.csv";
                     
                     // build a file sink
                     auto fileSink = Results->CreateSink(filename);
