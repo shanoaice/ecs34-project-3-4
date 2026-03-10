@@ -26,7 +26,7 @@ endif
 CXXFLAGS += $(CFLAGS) -std=c++17
 LDFLAGS  += -fuse-ld=$(LD) -lexpat
 
-TEST_CFLAGS   := -Wall -Werror -Wpedantic -g -O0 --coverage
+TEST_CFLAGS   := -Wall -Werror -Wpedantic -g -Og --coverage
 TEST_CXXFLAGS := $(TEST_CFLAGS) -std=c++17
 TEST_LDFLAGS  := -fuse-ld=$(LD) -lgcov -lpthread -lgtest -lgtest_main -lexpat
 
@@ -34,14 +34,14 @@ SOURCES := StringUtils StringDataSink StringDataSource DSVWriter DSVReader XMLRe
 BINARIES := speedtest kmlout
 TESTS := StringUtilsTest StringDataSinkTest StringDataSourceTest DSVTest XMLTest CSVBusSystemTest OpenStreetMapTest
 
-.PHONY: all directories test_directories test clean
+.PHONY: all directories test_directories test clean build_test
 
 all: directories binaries library test
 
-test: test_directories cover
+build_test: test_directories $(addprefix $(TESTBINDIR)/, $(TESTS))
 
-cover: $(addprefix $(TESTBINDIR)/, $(TESTS))
-	for test in $^; do ./$$test; done
+test: build_test
+	for test in $(addprefix $(TESTBINDIR)/, $(TESTS)); do ./$$test; done
 	lcov --capture --directory . --output-file $(COVERAGEDIR)/coverage.info --ignore-errors inconsistent,source,mismatch
 	lcov --remove $(COVERAGEDIR)/coverage.info '/usr/*' '*/testsrc/*' --output-file $(COVERAGEDIR)/coverage.info
 	genhtml $(COVERAGEDIR)/coverage.info --output-directory $(COVERAGEDIR)
