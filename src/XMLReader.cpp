@@ -2,6 +2,7 @@
 #include "StringUtils.h"
 #include <expat.h>
 #include <queue>
+#include <utility>
 
 // <tag attr="val">CharData</tag>
 
@@ -12,24 +13,33 @@ struct CXMLReader::SImplementation {
     std::vector<char> DBuffer;
     const size_t DBufferSize = 512;
 
+    // Store accumulated CharData that hasn't been returned yet
+    std::string DAccumulatedCharData;
+
     bool DDone = false;
     bool DParseError = false;
 
     static void StartElementHandler(void *userData, const XML_Char *name,
                                     const XML_Char **atts) {
-        SImplementation *This = (SImplementation *)userData;
+        auto *This = static_cast<SImplementation *>(userData);
+
+        FlushCData(*This);
+
         SXMLEntity NewEntity;
 
         NewEntity.DType = SXMLEntity::EType::StartElement;
         NewEntity.DNameData = name;
         for (int i = 0; atts[i]; i += 2) {
-            NewEntity.DAttributes.push_back({atts[i], atts[i + 1]});
+            NewEntity.DAttributes.emplace_back(atts[i], atts[i + 1]);
         }
         This->DQueue.push(NewEntity);
     }
 
     static void EndElementHandler(void *userData, const XML_Char *name) {
-        SImplementation *This = (SImplementation *)userData;
+        auto *This = static_cast<SImplementation *>(userData);
+
+        FlushCData(*This);
+
         SXMLEntity NewEntity;
 
         NewEntity.DType = SXMLEntity::EType::EndElement;
@@ -37,20 +47,28 @@ struct CXMLReader::SImplementation {
         This->DQueue.push(NewEntity);
     }
 
-    static void CharacterDataHandler(void *userData, const XML_Char *cdata,
-                                     int len) {
-        SImplementation *This = (SImplementation *)userData;
-        SXMLEntity NewEntity;
-
-        NewEntity.DType = SXMLEntity::EType::CharData;
-        NewEntity.DNameData = std::string(cdata, len);
-        if (!StringUtils::IsAllWhiteSpace(NewEntity.DNameData)) {
-            This->DQueue.push(NewEntity);
+    static void FlushCData(SImplementation &self) {
+        // Flush any accumulated character data before the end element
+        if (!self.DAccumulatedCharData.empty()) {
+            if (!StringUtils::IsAllWhiteSpace(self.DAccumulatedCharData)) {
+                SXMLEntity CharEntity;
+                CharEntity.DType = SXMLEntity::EType::CharData;
+                CharEntity.DNameData = self.DAccumulatedCharData;
+                self.DQueue.push(CharEntity);
+            }
+            self.DAccumulatedCharData.clear();
         }
     }
 
+    static void CharacterDataHandler(void *userData, const XML_Char *cdata,
+                                     const int len) {
+        auto *This = static_cast<SImplementation *>(userData);
+
+        This->DAccumulatedCharData += std::string(cdata, len);
+    }
+
     SImplementation(std::shared_ptr<CDataSource> src) {
-        DSource = src;
+        DSource = std::move(src);
         DParser = XML_ParserCreate(nullptr);
 
         XML_SetUserData(DParser, (void *)this);
@@ -83,6 +101,7 @@ struct CXMLReader::SImplementation {
         }
 
         if (IsFinal) {
+            FlushCData(*this);
             DDone = true;
         }
         return true;
@@ -125,10 +144,10 @@ CXMLReader::CXMLReader(std::shared_ptr<CDataSource> src) {
     DImplementation = std::make_unique<SImplementation>(src);
 }
 
-CXMLReader::~CXMLReader() {}
+CXMLReader::~CXMLReader() = default;
 
 bool CXMLReader::End() const { return DImplementation->End(); }
 
-bool CXMLReader::ReadEntity(SXMLEntity &entity, bool skipcdata) {
+bool CXMLReader::ReadEntity(SXMLEntity &entity, bool skipcdata) const {
     return DImplementation->ReadEntity(entity, skipcdata);
 }
