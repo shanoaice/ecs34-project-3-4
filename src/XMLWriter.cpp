@@ -18,6 +18,8 @@ struct CXMLWriter::SImplementation {
         auto escaped = StringUtils::Replace(s, "&", "&amp;");
         escaped = StringUtils::Replace(escaped, "<", "&lt;");
         escaped = StringUtils::Replace(escaped, ">", "&gt;");
+        escaped = StringUtils::Replace(escaped, "\"", "&quot;");
+        escaped = StringUtils::Replace(escaped, "'", "&apos;");
 
         return escaped;
     }
@@ -28,7 +30,7 @@ struct CXMLWriter::SImplementation {
         escaped = StringUtils::Replace(escaped, "<", "&lt;");
         escaped = StringUtils::Replace(escaped, ">", "&gt;");
         escaped = StringUtils::Replace(escaped, "\"", "&quot;");
-        escaped = StringUtils::Replace(escaped, "\\", "&apos;");
+        escaped = StringUtils::Replace(escaped, "'", "&apos;");
 
         return escaped;
     }
@@ -121,9 +123,7 @@ struct CXMLWriter::SImplementation {
         return false;
     }
 
-    explicit SImplementation(std::shared_ptr<CDataSink> sink) {
-        DSink = sink;
-    }
+    explicit SImplementation(std::shared_ptr<CDataSink> sink) { DSink = sink; }
 };
 
 CXMLWriter::CXMLWriter(std::shared_ptr<CDataSink> sink) {

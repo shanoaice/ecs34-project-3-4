@@ -18,7 +18,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wpedantic -fPIC")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-set(SOURCES
+set(LIBRARY_SOURCES
     src/StringUtils.cpp
     src/StringDataSink.cpp
     src/StringDataSource.cpp
@@ -28,9 +28,17 @@ set(SOURCES
     src/XMLWriter.cpp
     src/CSVBusSystem.cpp
     src/OpenStreetMap.cpp
+    src/GeographicUtils.cpp
+    src/KMLWriter.cpp
+    src/FileDataFactory.cpp
+    src/FileDataSource.cpp
+    src/StandardDataSource.cpp
+    src/FileDataSink.cpp
+    src/StandardErrorDataSink.cpp
+    src/StandardDataSink.cpp
 )
 
-add_library(ecs34-osm SHARED ${SOURCES})
+add_library(ecs34-osm SHARED ${LIBRARY_SOURCES})
 target_link_libraries(ecs34-osm expat)
 
 set_target_properties(ecs34-osm PROPERTIES
@@ -38,6 +46,12 @@ set_target_properties(ecs34-osm PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin"
 )
+
+#add_executable(speedtest src/Speedtest.cpp)
+#target_link_libraries(speedtest expat ecs34-osm)
+
+#add_executable(kmlout src/KMLOut.cpp)
+#target_link_libraries(kmlout expat ecs34-osm)
 
 find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)
