@@ -4,7 +4,7 @@
 ## Author
 
 Haoqing Chen (shanoaice) 923493503  
-Iris Zhong (zzzsqiris) 923292733
+Iris Zhong (zzzsqiris) 923292733  
 *Hongrui Zhao (zeturn) 923210265 (Project 2 Code)*
 
 This project implements a set of CSV & OpenStreetMap XML Parser:
@@ -14,7 +14,16 @@ This project implements a set of CSV & OpenStreetMap XML Parser:
 
 ## Project Status
 
-Passes all test with reasonable coverage. We assume input OSM files will be valid XML.
+Preliminary implementations of:
+
+- `CDijkstraPathRouter`
+- `CDijkstraTransportationPlanner`
+- `CCSVBusSystemIndexer`
+- `TransportationPlannerCommandLine`
+
+are provided. Simple functions (accessors, etc.) are mostly complete. Complex / Core functions remains to be implemented.
+
+`CMakeLists.txt` config exists only for profiling with CLion. Its profiler only supports CMake projects. `Makefile` is still the main compilation method and is fully functional.
 
 ## Folder Structure
 
@@ -30,21 +39,8 @@ Passes all test with reasonable coverage. We assume input OSM files will be vali
 
 ## Generative AI Use
 
-I used Gemini for all prompts
+### Haoqing Chen
 
-### Prompt
+Some prompts and dialogues are overly long, and I am not going to paste full content.
 
-c++ how to convert string to number
-
-### Response
-
-1. Modern C++: std::stoi, std::stol, std::stod
-
-The most common and readable method is the "String To [Type]" family of functions found in the `<string>` header. These handle various numeric types and throw an exception if the conversion fails.
-
-Function Targeted Type Example
-std::stoi() int int i = std::stoi("42");
-std::stol() long long l = std::stol("123456789");
-std::stoll() long long long long ll = std::stoll("999999999");
-std::stod() double double d = std::stod("3.1415");
-std::stof() float float f = std::stof("2.5f");
+- https://www.perplexity.ai/search/i-am-asked-to-implement-dijkst-9WKgKp5RQjqVzyiHNZjltw
