@@ -11,7 +11,7 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithD
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_CXX_FLAGS_RELEASE "-O2" CACHE STRING "" FORCE)
 else ()
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0" CACHE STRING "" FORCE)
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -Og" CACHE STRING "" FORCE)
 endif ()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wpedantic -fPIC")
@@ -38,6 +38,8 @@ set(LIBRARY_SOURCES
         src/StandardDataSink.cpp
         src/DijkstraPathRouter.cpp
         src/DijkstraTransportationPlanner.cpp
+        src/TransportationPlannerCommandLine.cpp
+        src/BusSystemIndexer.cpp
 )
 
 add_library(ecs34-osm SHARED ${LIBRARY_SOURCES})
@@ -67,6 +69,9 @@ set(TEST_SOURCES
         testsrc/XMLTest.cpp
         testsrc/CSVBusSystemTest.cpp
         testsrc/OpenStreetMapTest.cpp
+        testsrc/GeographicUtilsTest.cpp
+        testsrc/OSMTest.cpp
+        testsrc/FileDataSSTest.cpp
 )
 
 set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data")
