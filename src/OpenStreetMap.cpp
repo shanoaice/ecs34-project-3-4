@@ -127,9 +127,18 @@ struct COpenStreetMap::SImplementation {
     }
 
     void ParseNode(const std::shared_ptr<CXMLReader> &src,
-                           SXMLEntity &currentEntity) {
+                   SXMLEntity &currentEntity) {
         SNode node;
-        node.DID = std::stoull(currentEntity.AttributeValue("id"));
+
+        try {
+            node.DID = std::stoull(currentEntity.AttributeValue("id"));
+        } catch (std::exception &) {
+            return;
+        }
+
+        if (DNodesById.find(node.DID) != DNodesById.end())
+            return;
+
         node.DLocation = {
             std::stod(currentEntity.AttributeValue("lat")),
             std::stod(currentEntity.AttributeValue("lon"))}; // done
@@ -148,7 +157,8 @@ struct COpenStreetMap::SImplementation {
                     node.DAttributeKeys.emplace_back(key);
                 }
 
-                // attributes that appear later in order overrides previous value
+                // attributes that appear later in order overrides previous
+                // value
                 node.DAttributes.insert_or_assign(key, val);
 
                 // then, consume and discard anything until we see the matching
@@ -168,9 +178,17 @@ struct COpenStreetMap::SImplementation {
     }
 
     void ParseWay(const std::shared_ptr<CXMLReader> &src,
-                          SXMLEntity &currentEntity) {
+                  SXMLEntity &currentEntity) {
         SWay way;
-        way.DID = std::stoull(currentEntity.AttributeValue("id"));
+        try {
+            way.DID = std::stoull(currentEntity.AttributeValue("id"));
+        } catch (std::exception &) {
+            return;
+        }
+
+        if (DWaysById.find(way.DID) != DWaysById.end())
+            return;
+
         while (src->ReadEntity(currentEntity)) {
             if (currentEntity.DType == SXMLEntity::EType::EndElement &&
                 currentEntity.DNameData == "way") {
@@ -200,7 +218,8 @@ struct COpenStreetMap::SImplementation {
                     way.DAttributeKeys.emplace_back(key);
                 }
 
-                // attributes that appear later in order overrides previous value
+                // attributes that appear later in order overrides previous
+                // value
                 way.DAttributes.insert_or_assign(key, val);
 
                 // then, consume and discard anything until we see the matching
