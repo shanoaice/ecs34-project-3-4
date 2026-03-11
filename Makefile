@@ -23,14 +23,14 @@ CFLAGS   += -O2
 else
 CFLAGS   += -g -O0
 endif
-CXXFLAGS += $(CFLAGS) -std=c++17
+CXXFLAGS += $(CFLAGS) -std=c++20
 LDFLAGS  += -fuse-ld=$(LD) -lexpat
 
 TEST_CFLAGS   := -Wall -Werror -Wpedantic -g -Og --coverage
-TEST_CXXFLAGS := $(TEST_CFLAGS) -std=c++17
+TEST_CXXFLAGS := $(TEST_CFLAGS) -std=c++20
 TEST_LDFLAGS  := -fuse-ld=$(LD) -lgcov -lpthread -lgtest -lgtest_main -lexpat
 
-SOURCES := StringUtils StringDataSink StringDataSource DSVWriter DSVReader XMLReader XMLWriter CSVBusSystem OpenStreetMap GeographicUtils KMLWriter FileDataFactory FileDataSource StandardDataSource FileDataSink StandardErrorDataSink StandardDataSink StringDataSource StringDataSink
+SOURCES := StringUtils StringDataSink StringDataSource DSVWriter DSVReader XMLReader XMLWriter CSVBusSystem OpenStreetMap GeographicUtils KMLWriter FileDataFactory FileDataSource StandardDataSource FileDataSink StandardErrorDataSink StandardDataSink StringDataSource StringDataSink DijkstraTransportationPlanner
 BINARIES := speedtest kmlout
 TESTS := StringUtilsTest StringDataSinkTest StringDataSourceTest DSVTest XMLTest CSVBusSystemTest OpenStreetMapTest OSMTest
 
