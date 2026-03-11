@@ -27,14 +27,14 @@ TEST(CSVBusSystem, StopTest){
     EXPECT_EQ(BusSystem.RouteCount(),0);
     auto Stop1Index = BusSystem.StopByIndex(0);
     auto Stop1ID = BusSystem.StopByID(1);
-    EXPECT_EQ(Stop1Index,Stop1ID);
-    ASSERT_TRUE(bool(Stop1Index));
+    EXPECT_EQ(*Stop1Index,*Stop1ID);
+    ASSERT_TRUE(static_cast<bool>(Stop1Index));
     EXPECT_EQ(Stop1Index->ID(),1);
     EXPECT_EQ(Stop1Index->NodeID(),101);
     auto Stop2Index = BusSystem.StopByIndex(1);
     auto Stop2ID = BusSystem.StopByID(2);
-    EXPECT_EQ(Stop2Index,Stop2ID);
-    ASSERT_TRUE(bool(Stop2Index));
+    EXPECT_EQ(*Stop2Index,*Stop2ID);
+    ASSERT_TRUE(static_cast<bool>(Stop2Index));
     EXPECT_EQ(Stop2Index->ID(),2);
     EXPECT_EQ(Stop2Index->NodeID(),102);
 }

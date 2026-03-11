@@ -13,6 +13,8 @@ class CBusSystem{
             virtual ~SStop(){};
             virtual TStopID ID() const noexcept = 0;
             virtual CStreetMap::TNodeID NodeID() const noexcept= 0;
+
+            virtual bool operator==(const SStop &rhs) const noexcept = 0;
         };
 
         struct SRoute{
