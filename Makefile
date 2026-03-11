@@ -36,7 +36,7 @@ TESTS := StringUtilsTest StringDataSinkTest StringDataSourceTest DSVTest XMLTest
 
 .PHONY: all directories test_directories test clean build_test
 
-all: directories binaries library test
+all: directories library test binaries
 
 build_test: test_directories $(addprefix $(TESTBINDIR)/, $(TESTS))
 
