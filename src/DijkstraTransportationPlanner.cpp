@@ -41,6 +41,23 @@ struct CDijkstraTransportationPlanner::SImplementation {
     std::size_t NodeCount() const noexcept {
         return config->StreetMap()->NodeCount();
     }
+
+    double FindShortestPath(TNodeID src, TNodeID dest,
+                            std::vector<TNodeID> &path) {
+        if (src == dest) {
+            path.clear();
+            path.push_back(src);
+            return 0.0;
+        }
+
+        std::unordered_map<TNodeID, TNodeID> predecessor;
+        std::unordered_map<TNodeID, double> distance;
+        std::priority_queue<std::pair<double, TNodeID>> pq;
+
+        distance[src] = 0;
+
+        return 0.0;
+    }
 };
 
 CDijkstraTransportationPlanner::CDijkstraTransportationPlanner(
@@ -52,9 +69,13 @@ CDijkstraTransportationPlanner::~CDijkstraTransportationPlanner() = default;
 std::size_t CDijkstraTransportationPlanner::NodeCount() const noexcept {
     return DImplementation->NodeCount();
 }
-
 std::shared_ptr<CStreetMap::SNode>
 CDijkstraTransportationPlanner::SortedNodeByIndex(
     const std::size_t index) const noexcept {
     return DImplementation->SortedNodeByIndex(index);
+}
+double
+CDijkstraTransportationPlanner::FindShortestPath(TNodeID src, TNodeID dest,
+                                                 std::vector<TNodeID> &path) {
+    return DImplementation->FindShortestPath(src, dest, path);
 }
