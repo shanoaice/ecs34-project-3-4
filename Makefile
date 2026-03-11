@@ -32,7 +32,7 @@ TEST_LDFLAGS  := -fuse-ld=$(LD) -lgcov -lpthread -lgtest -lgtest_main -lexpat
 
 SOURCES := StringUtils StringDataSink StringDataSource DSVWriter DSVReader XMLReader XMLWriter CSVBusSystem OpenStreetMap GeographicUtils KMLWriter FileDataFactory FileDataSource StandardDataSource FileDataSink StandardErrorDataSink StandardDataSink StringDataSource StringDataSink
 BINARIES := speedtest kmlout
-TESTS := StringUtilsTest StringDataSinkTest StringDataSourceTest DSVTest XMLTest CSVBusSystemTest OpenStreetMapTest
+TESTS := StringUtilsTest StringDataSinkTest StringDataSourceTest DSVTest XMLTest CSVBusSystemTest OpenStreetMapTest OSMTest
 
 .PHONY: all directories test_directories test clean build_test
 
