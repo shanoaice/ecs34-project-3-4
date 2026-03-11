@@ -9,15 +9,23 @@ struct CDSVWriter::SImplementation {
     std::shared_ptr<CDataSink> DSink;
     char DDelimiter;
     bool DQuoteAll;
+    bool DFirstRow;
 
     SImplementation(std::shared_ptr<CDataSink> sink, char delim,
                     bool quoteall) {
         DSink = sink;
         DDelimiter = delim;
         DQuoteAll = quoteall;
+        DFirstRow = true;
     }
 
     bool WriteRow(const std::vector<std::string> &row) {
+        // Add newline before each row except the first
+        if (!DFirstRow) {
+            DSink->Put('\n');
+        }
+        DFirstRow = false;
+
         bool first_col = true;
         for (const auto &col : row) {
             if (!first_col) {
@@ -43,13 +51,11 @@ struct CDSVWriter::SImplementation {
                 DSink->Put('"');
                 DSink->Write(buf);
                 DSink->Put('"');
-            // otherwise, write the original buf
+                // otherwise, write the original buf
             } else {
                 DSink->Write(buf);
             }
         }
-
-        DSink->Put('\n');
 
         return true;
     };
