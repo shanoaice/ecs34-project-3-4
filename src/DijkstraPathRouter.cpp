@@ -30,7 +30,7 @@ struct CDijkstraPathRouter::SImplementation {
     std::unordered_map<TVertexID, std::unordered_map<TVertexID, double>>
         adjancency_list;
 
-    const double epsilon = 1.0e-7;
+    const double epsilon = 1.0e-5;
 
     bool is_dirty = false;
 
@@ -120,7 +120,7 @@ struct CDijkstraPathRouter::SImplementation {
         // space and I doubt this will be a hot path
         if (!is_dirty && state.contains(src) &&
             state[src]->visited.contains(dest)) {
-            path.emplace_back(state[src]->path[dest]);
+            path.emplace_back(dest);
             while (path.back() != src) {
                 path.emplace_back(state[src]->path[path.back()]);
             }
@@ -162,7 +162,7 @@ struct CDijkstraPathRouter::SImplementation {
             // the recorded distance, we skip it
             if (const auto target_vertex_it = dist.find(u);
                 target_vertex_it != dist.cend() &&
-                target_vertex_it->second - epsilon < u_weight)
+                target_vertex_it->second < u_weight - epsilon)
                 continue;
 
             visited.insert(u);
@@ -180,7 +180,7 @@ struct CDijkstraPathRouter::SImplementation {
 
                     if (v_distance_it == dist.cend() ||
                         new_distance < v_distance_it->second - epsilon) {
-                        dist.insert_or_assign(u, new_distance);
+                        dist.insert_or_assign(v, new_distance);
                         tracked_path.insert_or_assign(v, u);
                         pq.emplace(new_distance, v);
                     }
@@ -199,7 +199,7 @@ struct CDijkstraPathRouter::SImplementation {
         }
 
         // reconstruct path from the tracked_path map
-        path.emplace_back(tracked_path[dest]);
+        path.emplace_back(dest);
         while (path.back() != src) {
             path.emplace_back(tracked_path[path.back()]);
         }
