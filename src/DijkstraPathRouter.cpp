@@ -1,5 +1,6 @@
 #include "DijkstraPathRouter.h"
 
+#include <algorithm>
 #include <queue>
 #include <random>
 #include <unordered_map>
@@ -17,6 +18,7 @@ struct CDijkstraPathRouter::SImplementation {
         std::unordered_map<TVertexID, double> distance;
         min_vertex_pq pq;
         std::unordered_set<TVertexID> visited;
+        bool started = false;
     };
 
     std::random_device rng_source;
@@ -24,10 +26,9 @@ struct CDijkstraPathRouter::SImplementation {
                        rng_source()};
     std::mt19937_64 rng{seed};
 
-    std::vector<TVertexID> vertices;
-    std::unordered_map<TVertexID, std::any> vertex_map;
+    std::unordered_map<TVertexID, std::any> vertices;
     std::unordered_map<TVertexID, std::unordered_map<TVertexID, double>>
-        connection_map;
+        adjancency_list;
 
     const double epsilon = 1.0e-7;
 
@@ -50,16 +51,16 @@ struct CDijkstraPathRouter::SImplementation {
         TVertexID id = rng();
 
         // make sure vertex id is unique
-        while (vertex_map.contains(id)) {
+        while (vertices.contains(id)) {
             id = rng();
         }
 
-        // update state flag
-        is_dirty = true;
+        // we don't mark graph dirty if we just inserted a vertex
+        // because by default it is not reachable
+        // is_dirty = true;
 
-        vertices.emplace_back(id);
-        vertex_map[id] = std::move(tag);
-        connection_map[id] = {};
+        vertices[id] = std::move(tag);
+        adjancency_list[id] = {};
 
         return id;
     }
@@ -69,7 +70,7 @@ struct CDijkstraPathRouter::SImplementation {
         if (src == dest)
             return true;
 
-        if (!vertex_map.contains(src) || !vertex_map.contains(dest))
+        if (!vertices.contains(src) || !vertices.contains(dest))
             return false;
 
         if (weight < 0)
@@ -79,17 +80,17 @@ struct CDijkstraPathRouter::SImplementation {
         is_dirty = true;
 
         // compare with epsilon for double fp error
-        if (const auto src_it = connection_map[src].find(dest);
-            src_it == connection_map[src].cend() ||
+        if (const auto src_it = adjancency_list[src].find(dest);
+            src_it == adjancency_list[src].cend() ||
             weight < src_it->second - epsilon) {
-            connection_map[src].insert_or_assign(dest, weight);
+            adjancency_list[src].insert_or_assign(dest, weight);
         }
 
         if (bidir) {
-            if (const auto dst_it = connection_map[dest].find(src);
-                dst_it == connection_map[dest].cend() ||
+            if (const auto dst_it = adjancency_list[dest].find(src);
+                dst_it == adjancency_list[dest].cend() ||
                 weight < dst_it->second - epsilon) {
-                connection_map[dest].insert_or_assign(src, weight);
+                adjancency_list[dest].insert_or_assign(src, weight);
             }
         }
 
@@ -97,33 +98,116 @@ struct CDijkstraPathRouter::SImplementation {
     }
 
     std::any GetVertexTag(const TVertexID id) const noexcept {
-        const auto it = vertex_map.find(id);
-        return it == vertex_map.cend() ? std::any() : it->second;
+        const auto it = vertices.find(id);
+        return it == vertices.cend() ? std::any() : it->second;
     }
 
     double FindShortestPath(const TVertexID src, const TVertexID dest,
                             std::vector<TVertexID> &path) {
+        path.clear();
 
-        if (is_dirty || state.contains(src)) {
+        // if source is equal to dest, path only contains source or dest
+        // and distance is 0.0
+        if (src == dest) {
+            path.emplace_back(src);
+            return 0.0;
+        }
+
+        // if the graph is not changed (marked dirty by AddEdge) and the dest
+        // vertex is visited, we had searched it, and we just backtrack the path
+        // and returns the calculated value. we could cache the path too and
+        // completely eliminate any extra calculation, but that is costly on
+        // space and I doubt this will be a hot path
+        if (!is_dirty && state.contains(src) &&
+            state[src]->visited.contains(dest)) {
+            path.emplace_back(state[src]->path[dest]);
+            while (path.back() != src) {
+                path.emplace_back(state[src]->path[path.back()]);
+            }
+            std::ranges::reverse(path);
+            return state[src]->distance[dest];
+        }
+
+        // if the graph is marked dirty, or if we haven't started a search from
+        // src yet, we (re)initialize the DijkstraSearchState and store it.
+        if (is_dirty || !state.contains(src)) {
             state.insert_or_assign(src,
                                    std::make_shared<DijkstraSearchState>());
         }
 
+        // some QoL shorthands
         auto &tracked_path = state[src]->path;
         auto &dist = state[src]->distance;
         auto &pq = state[src]->pq;
         auto &visited = state[src]->visited;
 
         if (pq.empty()) {
+            if (state[src]->started) {
+                // if it is started and queue is still empty, while the dest is
+                // not in visited set, it is unreachable. return NoPathExists
+                return NoPathExists;
+            }
+            // otherwise, we insert the source and start the search
             pq.emplace(0, src);
+            dist.insert_or_assign(src, 0);
+            state[src]->started = true;
         }
 
         while (!pq.empty()) {
-            auto weight = pq.top().first;
-            auto vertex = pq.top().second;
+            const auto u_weight = pq.top().first;
+            const auto u = pq.top().second;
+            pq.pop();
+
+            // lazy delete -- if the path in priority_queue is not shorter than
+            // the recorded distance, we skip it
+            if (const auto target_vertex_it = dist.find(u);
+                target_vertex_it != dist.cend() &&
+                target_vertex_it->second - epsilon < u_weight)
+                continue;
+
+            visited.insert(u);
+
+            // if we reached the destination vertex, exit early
+            if (u == dest) {
+                break;
+            }
+
+            if (const auto u_adj_list_it = adjancency_list.find(u);
+                u_adj_list_it != adjancency_list.cend()) {
+                for (const auto [v, v_weight] : u_adj_list_it->second) {
+                    const auto new_distance = dist[u] + v_weight;
+                    const auto v_distance_it = dist.find(v);
+
+                    if (v_distance_it == dist.cend() ||
+                        new_distance < v_distance_it->second - epsilon) {
+                        dist.insert_or_assign(u, new_distance);
+                        tracked_path.insert_or_assign(v, u);
+                        pq.emplace(new_distance, v);
+                    }
+                }
+            }
         }
 
         is_dirty = false;
+
+        const auto dest_distance_it = dist.find(dest);
+
+        // if after Dijkstra we still don't have it in our dest, it's
+        // unreachable. don't add anything to path and return NoPathExists
+        if (dest_distance_it == dist.cend()) {
+            return NoPathExists;
+        }
+
+        // reconstruct path from the tracked_path map
+        path.emplace_back(tracked_path[dest]);
+        while (path.back() != src) {
+            path.emplace_back(tracked_path[path.back()]);
+        }
+        // it is the other way round because we backtrack, reverse it
+        std::ranges::reverse(path);
+
+        // return the value
+        return dest_distance_it->second;
     }
 };
 
@@ -148,6 +232,12 @@ std::any CDijkstraPathRouter::GetVertexTag(const TVertexID id) const noexcept {
 bool CDijkstraPathRouter::AddEdge(const TVertexID src, const TVertexID dest,
                                   const double weight, bool bidir) noexcept {
     return DImplementation->AddEdge(src, dest, weight, bidir);
+}
+
+bool CDijkstraPathRouter::Precompute(
+    std::chrono::steady_clock::time_point deadline) noexcept {
+    // TODO
+    return true;
 }
 
 double
