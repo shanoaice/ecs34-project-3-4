@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <map>
 #include <utility>
 
 // define a constant to handle invalid node id
@@ -97,7 +98,7 @@ struct COpenStreetMap::SImplementation {
     std::unordered_map<TWayID, std::shared_ptr<SWay>> DWaysById;
 
     std::vector<std::shared_ptr<SNode>> DNodes;
-    std::unordered_map<TNodeID, std::shared_ptr<SNode>> DNodesById;
+    std::map<TNodeID, std::shared_ptr<SNode>> DNodesById;
 
     bool ParseOpenStreetMap(const std::shared_ptr<CXMLReader> &src) {
         // parse until OSM tag is found
@@ -248,6 +249,12 @@ struct COpenStreetMap::SImplementation {
 
     // total way parsed
     std::size_t WayCount() const noexcept { return DWays.size(); }
+
+    std::shared_ptr<CStreetMap::SNode> SortedNodeByIndex(const std::size_t index) const noexcept {
+        if (index >= DNodes.size())
+            return nullptr;
+        return std::next(DNodesById.cbegin(), index)->second;
+    }
 
     std::shared_ptr<CStreetMap::SNode>
     NodeByIndex(const std::size_t index) const noexcept {
