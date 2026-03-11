@@ -8,8 +8,8 @@ class CDijkstraTransportationPlanner : public CTransportationPlanner{
         struct SImplementation;
         std::unique_ptr<SImplementation> DImplementation;
     public:
-        CDijkstraTransportationPlanner(std::shared_ptr<SConfiguration> config);
-        ~CDijkstraTransportationPlanner();
+        CDijkstraTransportationPlanner(const std::shared_ptr<SConfiguration>& config);
+        ~CDijkstraTransportationPlanner() override;
 
         std::size_t NodeCount() const noexcept override;
         std::shared_ptr<CStreetMap::SNode> SortedNodeByIndex(std::size_t index) const noexcept override;
