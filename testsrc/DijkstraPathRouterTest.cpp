@@ -9,18 +9,18 @@ TEST(DijkstraPathRouter, SimpleTest){
     EXPECT_EQ(PathRouter.VertexCount(),1);
     auto VetexTag = std::any_cast<std::string>(PathRouter.GetVertexTag(VertexID));
     EXPECT_EQ(VetexTag,"foo");
-    
+
 }
 
 TEST(DijkstraPathRouter, ShortestPath){
     CDijkstraPathRouter PathRouter;
     /*
-                5   
+                5
        A ---> B --->C
           4  2|  ___^
               V / 1
               D
-    
+
     */
     auto vA = PathRouter.AddVertex(std::string("A"));
     auto vB = PathRouter.AddVertex(std::string("B"));
@@ -31,20 +31,21 @@ TEST(DijkstraPathRouter, ShortestPath){
     EXPECT_TRUE(PathRouter.AddEdge(vB,vC,5.0));
     EXPECT_TRUE(PathRouter.AddEdge(vB,vD,2.0));
     EXPECT_TRUE(PathRouter.AddEdge(vD,vC,1.0));
-    
+
     //A -> B -> D -> C: 4 + 2 + 1 = 7 shortest path
     std::vector<CPathRouter::TVertexID> Path;
-    EXPECT_EQ(PathRouter.FindShortestPath(vA,vC,Path), 7.0);
+    double distance = PathRouter.FindShortestPath(vA,vC,Path);
+    EXPECT_EQ(distance, 7.0);
     std::vector<CPathRouter::TVertexID> ExpectedPath{vA,vB,vD,vC};
     EXPECT_EQ(Path,ExpectedPath);
-    
+
 }
 
 
 TEST(DijkstraPathRouter, NotConnected){
     CDijkstraPathRouter PathRouter;
     /*
-          10         
+          10
        E ---> F     G
     */
     auto vE = PathRouter.AddVertex(std::string("E"));
@@ -59,7 +60,7 @@ TEST(DijkstraPathRouter, NotConnected){
 
 TEST(DijkstraPathRouter, NegativeWeight){
     CDijkstraPathRouter PathRouter;
-    /*        
+    /*
         I -> J
           -5       Error!(Dijkstra cannot do negative edge)
     */
@@ -70,8 +71,8 @@ TEST(DijkstraPathRouter, NegativeWeight){
 
 TEST(DijkstraPathRouter, SameSrcDest){
     CDijkstraPathRouter PathRouter;
-    /*  0      
-        H -> 
+    /*  0
+        H ->
         ^    | 10          // self loop, but shortest should be 0
         | <- v
 
