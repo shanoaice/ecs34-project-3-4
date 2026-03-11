@@ -21,8 +21,8 @@ struct CCSVBusSystem::SImplementation {
         TStopID ID() const noexcept override { return DStopID; }
         CStreetMap::TNodeID NodeID() const noexcept override { return DNodeID; }
 
-        friend bool operator==(const SStop &lhs, const SStop &rhs) {
-            return lhs.DStopID == rhs.DStopID;
+        bool operator==(const CBusSystem::SStop &rhs) const noexcept override {
+            return DStopID == rhs.ID() && DNodeID == rhs.NodeID();
         }
     };
 
