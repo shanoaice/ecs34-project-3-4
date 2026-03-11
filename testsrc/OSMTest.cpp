@@ -218,7 +218,6 @@ TEST(OSMTest, ErrorTest){
     for(auto &ErrorString: ErrorStrings){
         auto InStream = std::make_shared<CStringDataSource>(ErrorString + std::string(1000,' '));
         auto Reader = std::make_shared<CXMLReader>(InStream);
-        EXPECT_NO_THROW(COpenStreetMap StreetMap(Reader)) << ErrorString;
         COpenStreetMap StreetMap(Reader);
 
         EXPECT_EQ(StreetMap.WayCount(),std::string::npos == ErrorString.find("way") ? 0 : 1);
