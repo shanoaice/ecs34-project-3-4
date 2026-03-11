@@ -2,16 +2,23 @@
 
 #include <queue>
 #include <random>
-#include <sys/stat.h>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
-using min_vertex_pq = std::priority_queue<
-    std::pair<double, CPathRouter::TVertexID>,
-    std::vector<std::pair<double, CPathRouter::TVertexID>>,
-    std::greater<std::pair<double, CPathRouter::TVertexID>>>;
-
 struct CDijkstraPathRouter::SImplementation {
+    using min_vertex_pq =
+        std::priority_queue<std::pair<double, TVertexID>,
+                            std::vector<std::pair<double, TVertexID>>,
+                            std::greater<>>;
+
+    struct DijkstraSearchState {
+        std::unordered_map<TVertexID, TVertexID> path;
+        std::unordered_map<TVertexID, double> distance;
+        min_vertex_pq pq;
+        std::unordered_set<TVertexID> visited;
+    };
+
     std::random_device rng_source;
     std::seed_seq seed{rng_source(), rng_source(), rng_source(), rng_source(),
                        rng_source()};
@@ -27,20 +34,13 @@ struct CDijkstraPathRouter::SImplementation {
     bool is_dirty = false;
 
     // This map's key is the source vertex id
-    // value is a pointer to another map that stores the calculated path
-    std::unordered_map<
-        TVertexID, std::shared_ptr<std::unordered_map<TVertexID, TVertexID>>>
-        path;
-    // same thing, calculated weight (distance)
-    std::unordered_map<TVertexID,
-                       std::shared_ptr<std::unordered_map<TVertexID, double>>>
-        dist;
-    // same thing, priority_queue scratchpad
-    std::unordered_map<TVertexID, std::shared_ptr<min_vertex_pq>> pq;
+    // value is a pointer to the struct storing the Dijkstra search state on the
+    // source vertex
+    std::unordered_map<TVertexID, std::shared_ptr<DijkstraSearchState>> state;
 
-    // both have the 2nd map wrapped in a shared_ptr because they might have to
+    // state object is wrapped in shared_ptr because they might have to
     // be sent across threads in precompute. We don't need a lock because no two
-    // threads will work on the same source vertex the same time vertices,
+    // threads will work on the same source vertex the same time. Vertices,
     // vertex_map & connection map also does not have to be locked, because they
     // are read-only in Precompute
 
@@ -103,29 +103,24 @@ struct CDijkstraPathRouter::SImplementation {
 
     double FindShortestPath(const TVertexID src, const TVertexID dest,
                             std::vector<TVertexID> &path) {
-        bool scratchpad_initialized = this->path.contains(src) &&
-                                      this->dist.contains(src) &&
-                                      this->pq.contains(src);
 
-        if (is_dirty || !scratchpad_initialized) {
-            this->path[src] =
-                std::make_shared<std::unordered_map<TVertexID, TVertexID>>();
-            this->dist[src] =
-                std::make_shared<std::unordered_map<TVertexID, double>>();
-            this->pq[src] = std::make_shared<min_vertex_pq>();
+        if (is_dirty || state.contains(src)) {
+            state.insert_or_assign(src,
+                                   std::make_shared<DijkstraSearchState>());
         }
 
-        const auto &tracked_path = this->path[src];
-        const auto &dist = this->dist[src];
-        const auto &pq = this->pq[src];
+        auto &tracked_path = state[src]->path;
+        auto &dist = state[src]->distance;
+        auto &pq = state[src]->pq;
+        auto &visited = state[src]->visited;
 
-        if (pq->empty()) {
-            pq->emplace(0, src);
+        if (pq.empty()) {
+            pq.emplace(0, src);
         }
 
-        while (!pq->empty()) {
-            auto weight = pq->top().first;
-            auto vertex = pq->top().second;
+        while (!pq.empty()) {
+            auto weight = pq.top().first;
+            auto vertex = pq.top().second;
         }
 
         is_dirty = false;
