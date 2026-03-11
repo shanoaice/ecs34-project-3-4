@@ -40,7 +40,7 @@ TEST_F(OpenStreetMapTest, WayCount) { EXPECT_EQ(osm->WayCount(), 1644); }
 TEST_F(OpenStreetMapTest, NodeByIndex) {
     // simple node
     const auto node0 = osm->NodeByIndex(0);
-    constexpr std::pair<double, double> node0_location{38.5178523,
+    const CStreetMap::SLocation node0_location{38.5178523,
                                                        -121.7712408};
     EXPECT_EQ(node0->ID(), 62208369ull);
 
@@ -48,7 +48,7 @@ TEST_F(OpenStreetMapTest, NodeByIndex) {
 
     // complex node
     const auto node41 = osm->NodeByIndex(41);
-    constexpr std::pair<double, double> node41_location{38.5222679,
+    const CStreetMap::SLocation node41_location{38.5222679,
                                                         -121.7673869};
     EXPECT_EQ(node41->ID(), 62224641ull);
 
@@ -76,7 +76,7 @@ TEST_F(OpenStreetMapTest, NodeByIndex) {
 TEST_F(OpenStreetMapTest, NodeByID) {
     // simple node
     const auto node_id62345194 = osm->NodeByID(62345194ull);
-    constexpr std::pair<double, double> node62345194_location{38.5199603,
+    const CStreetMap::SLocation node62345194_location{38.5199603,
                                                               -121.7692337};
     EXPECT_EQ(node_id62345194->ID(), 62345194ull);
 
@@ -84,7 +84,7 @@ TEST_F(OpenStreetMapTest, NodeByID) {
 
     // complex node
     const auto node_id62224641 = osm->NodeByID(62224641ull);
-    constexpr std::pair<double, double> node62224641_location{38.5222679,
+    const CStreetMap::SLocation node62224641_location{38.5222679,
                                                               -121.7673869};
     EXPECT_EQ(node_id62224641->ID(), 62224641ull);
 
