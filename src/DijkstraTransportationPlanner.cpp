@@ -3,14 +3,16 @@
 #include "OpenStreetMap.h"
 #include "TransportationPlanner.h"
 #include <algorithm>
+#include <memory>
 #include <queue>
 #include <ranges>
 #include <unordered_map>
-#include <memory>
 
 struct CDijkstraTransportationPlanner::SImplementation {
     std::shared_ptr<SConfiguration> config;
-    CDijkstraPathRouter router;
+
+    CDijkstraPathRouter shortest_router;
+    CDijkstraPathRouter transportation_router;
 
     explicit SImplementation(const std::shared_ptr<SConfiguration> &config) {
         this->config = config;
@@ -25,7 +27,7 @@ struct CDijkstraTransportationPlanner::SImplementation {
         // COpenStreetMap stores node within a map
         const auto osm =
             std::dynamic_pointer_cast<COpenStreetMap>(config->StreetMap());
-        if (osm)
+        if (osm != nullptr)
             return osm->SortedNodeByIndex(index);
 
         std::vector<TNodeID> nodeIds;
@@ -49,12 +51,6 @@ struct CDijkstraTransportationPlanner::SImplementation {
             path.push_back(src);
             return 0.0;
         }
-
-        std::unordered_map<TNodeID, TNodeID> predecessor;
-        std::unordered_map<TNodeID, double> distance;
-        std::priority_queue<std::pair<double, TNodeID>> pq;
-
-        distance[src] = 0;
 
         return 0.0;
     }
