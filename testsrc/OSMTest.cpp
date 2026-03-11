@@ -9,7 +9,7 @@ TEST(OSMTest, SimpleTest){
                                                         "</osm>");
     auto Reader = std::make_shared<CXMLReader>(InStream);
     COpenStreetMap StreetMap(Reader);
-    
+
     EXPECT_EQ(StreetMap.NodeCount(),0);
     EXPECT_EQ(StreetMap.WayCount(),0);
 }
@@ -22,7 +22,7 @@ TEST(OSMTest, SimpleNodeTest){
                                                         "</osm>");
     auto Reader = std::make_shared<CXMLReader>(InStream);
     COpenStreetMap StreetMap(Reader);
-    
+
     EXPECT_EQ(StreetMap.NodeCount(),2);
     EXPECT_EQ(StreetMap.WayCount(),0);
     auto TempNode1 = StreetMap.NodeByIndex(0);
@@ -56,7 +56,7 @@ TEST(OSMTest, NodeTest){
                                                         "</osm>");
     auto Reader = std::make_shared<CXMLReader>(InStream);
     COpenStreetMap StreetMap(Reader);
-    
+
     EXPECT_EQ(StreetMap.NodeCount(),2);
     EXPECT_EQ(StreetMap.WayCount(),0);
     auto TempNode1 = StreetMap.NodeByIndex(0);
@@ -94,7 +94,7 @@ TEST(OSMTest, SimpleWayTest){
                                                         "</osm>");
     auto Reader = std::make_shared<CXMLReader>(InStream);
     COpenStreetMap StreetMap(Reader);
-    
+
     EXPECT_EQ(StreetMap.NodeCount(),2);
     auto TempNode1 = StreetMap.NodeByIndex(0);
     EXPECT_EQ(TempNode1->GetAttributeKey(0),"foot");
@@ -130,7 +130,7 @@ TEST(OSMTest, WayTest){
                                                         "</osm>");
     auto Reader = std::make_shared<CXMLReader>(InStream);
     COpenStreetMap StreetMap(Reader);
-    
+
     EXPECT_EQ(StreetMap.NodeCount(),2);
     EXPECT_EQ(StreetMap.WayCount(),1);
     auto TempWay = StreetMap.WayByIndex(0);
@@ -145,7 +145,7 @@ TEST(OSMTest, WayTest){
     EXPECT_EQ(TempWay->GetAttribute(""),"");
 }
 
-TEST(OSMTest, ErrorTet){
+TEST(OSMTest, ErrorTest){
     std::vector<std::string> ErrorStrings = {   "<?xml version='1.0' encoding='UTF-8'?>"
                                                 "<osm version=\"0.6\" generator=\"osmconvert 0.8.5\">"
                                                 "<node id=\"1\" lat=\"38.5\" lon=\"-121.7\">"
@@ -218,8 +218,9 @@ TEST(OSMTest, ErrorTet){
     for(auto &ErrorString: ErrorStrings){
         auto InStream = std::make_shared<CStringDataSource>(ErrorString + std::string(1000,' '));
         auto Reader = std::make_shared<CXMLReader>(InStream);
-        COpenStreetMap StreetMap(Reader);   
-            
+        EXPECT_NO_THROW(COpenStreetMap StreetMap(Reader)) << ErrorString;
+        COpenStreetMap StreetMap(Reader);
+
         EXPECT_EQ(StreetMap.WayCount(),std::string::npos == ErrorString.find("way") ? 0 : 1);
 
     }

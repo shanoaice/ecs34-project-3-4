@@ -14,8 +14,9 @@ struct COpenStreetMap::SImplementation {
 
     struct SNode : public CStreetMap::SNode {
         TNodeID DID = InvalidNodeID;
-        SLocation DLocation;
-        std::vector<std::pair<std::string, std::string>> DAttributes;
+        SLocation DLocation{};
+        std::vector<std::string> DAttributeKeys;
+        std::unordered_map<std::string, std::string> DAttributes;
         ~SNode() override = default;
         TNodeID ID() const noexcept override { return DID; }
 
@@ -27,8 +28,8 @@ struct COpenStreetMap::SImplementation {
 
         std::string GetAttributeKey(std::size_t index) const noexcept override {
             // bound check
-            if (index < DAttributes.size()) {
-                return DAttributes[index].first;
+            if (index < DAttributeKeys.size()) {
+                return DAttributeKeys[index];
             } else {
                 return "";
             }
@@ -36,19 +37,12 @@ struct COpenStreetMap::SImplementation {
 
         bool HasAttribute(const std::string &key) const noexcept override {
             // std::ranges::any_of is better than simply loop and match
-            return std::any_of(DAttributes.cbegin(), DAttributes.cend(),
-                               [key](const auto &attr_pair) {
-                                   return attr_pair.first == key;
-                               });
+            return DAttributes.find(key) != DAttributes.cend();
         }
 
         std::string
         GetAttribute(const std::string &key) const noexcept override {
-            const auto it =
-                std::find_if(DAttributes.cbegin(), DAttributes.cend(),
-                             [key](const auto &attr_pair) {
-                                 return attr_pair.first == key;
-                             });
+            const auto it = DAttributes.find(key);
             return it == DAttributes.cend() ? "" : it->second;
         }
     };
@@ -57,7 +51,8 @@ struct COpenStreetMap::SImplementation {
         ~SWay() override = default;
         TWayID DID = InvalidWayID;
         std::vector<TNodeID> DNodeID;
-        std::vector<std::pair<std::string, std::string>> DAttributes;
+        std::vector<std::string> DAttributeKeys;
+        std::unordered_map<std::string, std::string> DAttributes;
 
         TWayID ID() const noexcept override { return DID; }
 
@@ -80,28 +75,20 @@ struct COpenStreetMap::SImplementation {
 
         std::string GetAttributeKey(std::size_t index) const noexcept override {
             // bound check
-            if (index < DAttributes.size()) {
-                // first in the attribute pair is key
-                return DAttributes[index].first;
+            if (index < DAttributeKeys.size()) {
+                return DAttributeKeys[index];
             } else {
                 return "";
             }
         }
 
         bool HasAttribute(const std::string &key) const noexcept override {
-            return std::any_of(DAttributes.cbegin(), DAttributes.cend(),
-                               [key](const auto &attr_pair) {
-                                   return attr_pair.first == key;
-                               });
+            return DAttributes.find(key) != DAttributes.cend();
         }
 
         std::string
         GetAttribute(const std::string &key) const noexcept override {
-            const auto it =
-                std::find_if(DAttributes.cbegin(), DAttributes.cend(),
-                             [key](const auto &attr_pair) {
-                                 return attr_pair.first == key;
-                             });
+            const auto it = DAttributes.find(key);
             return it == DAttributes.cend() ? "" : it->second;
         }
     };
@@ -155,8 +142,15 @@ struct COpenStreetMap::SImplementation {
                 // parse tag
                 std::string key = currentEntity.AttributeValue("k");
                 std::string val = currentEntity.AttributeValue("v");
-                // emplace_back avoids allocation
-                node.DAttributes.emplace_back(key, val);
+
+                // only insert attributes if they are not redundant
+                if (!node.HasAttribute(key)) {
+                    node.DAttributeKeys.emplace_back(key);
+                }
+
+                // attributes that appear later in order overrides previous value
+                node.DAttributes.insert_or_assign(key, val);
+
                 // then, consume and discard anything until we see the matching
                 // closing tag
                 while (currentEntity.DType != SXMLEntity::EType::EndElement ||
@@ -200,7 +194,15 @@ struct COpenStreetMap::SImplementation {
                 // parse attributes
                 std::string key = currentEntity.AttributeValue("k");
                 std::string val = currentEntity.AttributeValue("v");
-                way.DAttributes.emplace_back(key, val);
+
+                // only insert attributes if they are not redundant
+                if (!way.HasAttribute(key)) {
+                    way.DAttributeKeys.emplace_back(key);
+                }
+
+                // attributes that appear later in order overrides previous value
+                way.DAttributes.insert_or_assign(key, val);
+
                 // then, consume and discard anything until we see the matching
                 // closing tag
                 while (currentEntity.DType != SXMLEntity::EType::EndElement ||
