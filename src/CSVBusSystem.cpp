@@ -53,7 +53,7 @@ struct CCSVBusSystem::SImplementation {
 
     std::unordered_map<std::string, std::shared_ptr<SRoute>> DRoutesByName;
     std::vector<std::shared_ptr<SRoute>> DRoutesByIndex;
-    std::vector<SStop> stops;
+    std::vector<std::shared_ptr<SStop>> stops;
 
     std::size_t RouteCount() const noexcept { return DRoutesByName.size(); }
 
@@ -62,16 +62,16 @@ struct CCSVBusSystem::SImplementation {
     std::shared_ptr<SStop> StopByIndex(const std::size_t index) const noexcept {
         if (index >= stops.size())
             return nullptr;
-        return std::make_shared<SStop>(stops[index]);
+        return stops[index];
     }
 
     std::shared_ptr<SStop> StopByID(const TStopID id) const noexcept {
         const auto it =
             std::find_if(stops.cbegin(), stops.cend(),
-                         [id](const auto &stop) { return stop.ID() == id; });
+                         [id](const auto &stop) { return stop->ID() == id; });
         if (it == stops.cend())
             return nullptr;
-        return std::make_shared<SStop>(*it);
+        return *it;
     }
 
     std::shared_ptr<SRoute>
@@ -127,9 +127,8 @@ CCSVBusSystem::CCSVBusSystem(const std::shared_ptr<CDSVReader> &stopSource,
         buf.clear();
         while (stopSource->ReadRow(buf)) {
             if (buf.size() >= 2) {
-                // emplace_back avoids extra alloc
-                DImplementation->stops.emplace_back(std::stoul(buf[0]),
-                                                    std::stoul(buf[1]));
+                auto curStop = std::make_shared<SImplementation::SStop>(std::stoul(buf[0]), std::stoul(buf[1]));
+                DImplementation->stops.emplace_back(curStop);
             }
             buf.clear();
         }

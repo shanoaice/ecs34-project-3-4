@@ -2,13 +2,14 @@
 #include "DataSource.h"
 #include <memory>
 #include <string>
+#include <utility>
 
 struct CDSVReader::SImplementation {
     std::shared_ptr<CDataSource> DSource;
     char DDelimiter;
 
     SImplementation(std::shared_ptr<CDataSource> source, char delimiter) {
-        DSource = source;
+        DSource = std::move(source);
         DDelimiter = delimiter;
     }
 
