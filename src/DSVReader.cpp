@@ -89,6 +89,7 @@ struct CDSVReader::SImplementation {
     bool ReadRow(std::vector<std::string> &row) {
         if (DSource->End())
             return false;
+        row.clear();
         std::string current_val;
         while (!ParseValue(current_val)) {
             row.push_back(current_val);
