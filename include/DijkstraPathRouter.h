@@ -10,14 +10,14 @@ class CDijkstraPathRouter : public CPathRouter{
         std::unique_ptr<SImplementation> DImplementation;
     public:
         CDijkstraPathRouter();
-        ~CDijkstraPathRouter();
+        ~CDijkstraPathRouter() override;
 
-        std::size_t VertexCount() const noexcept;
-        TVertexID AddVertex(std::any tag) noexcept;
-        std::any GetVertexTag(TVertexID id) const noexcept;
-        bool AddEdge(TVertexID src, TVertexID dest, double weight, bool bidir = false) noexcept;
-        bool Precompute(std::chrono::steady_clock::time_point deadline) noexcept;
-        double FindShortestPath(TVertexID src, TVertexID dest, std::vector<TVertexID> &path) noexcept;
+        std::size_t VertexCount() const noexcept override;
+        TVertexID AddVertex(std::any tag) noexcept override;
+        std::any GetVertexTag(TVertexID id) const noexcept override;
+        bool AddEdge(TVertexID src, TVertexID dest, double weight, bool bidir = false) noexcept override;
+        bool Precompute(std::chrono::steady_clock::time_point deadline) noexcept override;
+        double FindShortestPath(TVertexID src, TVertexID dest, std::vector<TVertexID> &path) noexcept override;
 };
 
 #endif
