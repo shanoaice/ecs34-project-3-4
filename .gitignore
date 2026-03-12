@@ -81,3 +81,11 @@ Testing/
 .vscode
 
 .DS_Store
+
+# profile data
+heaptrack.speedtest.9850.zst
+*.heap
+memory-graph.svg
+*.perf.data
+*.zst
+results/
