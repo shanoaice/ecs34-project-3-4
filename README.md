@@ -44,3 +44,6 @@ are provided. Simple functions (accessors, etc.) are mostly complete. Complex / 
 Some prompts and dialogues are overly long, and I am not going to paste full content.
 
 - https://www.perplexity.ai/search/i-am-asked-to-implement-dijkst-9WKgKp5RQjqVzyiHNZjltw
+
+### Iris Zhong
+The md files in were polished using ChatGPT for efficient formatting to improve structure.
