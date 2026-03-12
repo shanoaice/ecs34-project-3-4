@@ -14,14 +14,7 @@ This project implements a set of CSV & OpenStreetMap XML Parser:
 
 ## Project Status
 
-Preliminary implementations of:
-
-- `CDijkstraPathRouter`
-- `CDijkstraTransportationPlanner`
-- `CCSVBusSystemIndexer`
-- `TransportationPlannerCommandLine`
-
-are provided. Simple functions (accessors, etc.) are mostly complete. Complex / Core functions remains to be implemented.
+Mostly fine, code quality might be spaghetti due to time difficulty. GetPathDescription does not work but that's bonus anyway.
 
 `CMakeLists.txt` config exists only for profiling with CLion. Its profiler only supports CMake projects. `Makefile` is still the main compilation method and is fully functional.
 
