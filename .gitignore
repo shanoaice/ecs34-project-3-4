@@ -46,6 +46,7 @@ build/
 Build/
 build-*/
 testbin/
+bin/
 testobj/
 obj/
 
