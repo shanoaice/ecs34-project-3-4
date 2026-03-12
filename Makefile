@@ -30,7 +30,7 @@ TEST_CFLAGS   := -Wall -Werror -Wpedantic -g -Og --coverage
 TEST_CXXFLAGS := $(TEST_CFLAGS) -std=c++20
 TEST_LDFLAGS  := -fuse-ld=$(LD) -lgcov -lpthread -lgtest -lgtest_main -lexpat
 
-SOURCES := StringUtils StringDataSink StringDataSource DSVWriter DSVReader XMLReader XMLWriter CSVBusSystem OpenStreetMap GeographicUtils KMLWriter FileDataFactory FileDataSource StandardDataSource FileDataSink StandardErrorDataSink StandardDataSink StringDataSource StringDataSink DijkstraPathRouter
+SOURCES := StringUtils StringDataSink StringDataSource DSVWriter DSVReader XMLReader XMLWriter CSVBusSystem OpenStreetMap GeographicUtils KMLWriter FileDataFactory FileDataSource StandardDataSource FileDataSink StandardErrorDataSink StandardDataSink StringDataSource StringDataSink DijkstraPathRouter BusSystemIndexer
 BINARIES := speedtest kmlout
 TESTS := StringUtilsTest StringDataSinkTest StringDataSourceTest FileDataSSTest GeographicUtilsTest DSVTest XMLTest CSVBusSystemTest OpenStreetMapTest OSMTest DijkstraPathRouterTest
 

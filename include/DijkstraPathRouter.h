@@ -2,6 +2,7 @@
 #define DIJKSTRAPATHROUTER_H
 
 #include "PathRouter.h"
+#include "OpenStreetMap.h"
 #include <memory>
 
 class CDijkstraPathRouter : public CPathRouter{

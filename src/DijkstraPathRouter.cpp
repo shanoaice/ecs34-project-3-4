@@ -1,4 +1,5 @@
 #include "DijkstraPathRouter.h"
+#include "DijkstraPathRouter_p.h"
 
 #include <algorithm>
 #include <queue>
@@ -48,11 +49,18 @@ struct CDijkstraPathRouter::SImplementation {
     std::size_t VertexCount() const noexcept { return vertices.size(); }
 
     TVertexID AddVertex(std::any tag) noexcept {
-        TVertexID id = rng();
+        TVertexID id;
 
-        // make sure vertex id is unique
-        while (vertices.contains(id)) {
-            id = rng();
+        if (tag.type() == typeid(SUniqueIdWithData)) {
+            // if you pass in a SUniqueIdWithData, the node id is guaranteed to
+            // be unique. so, we just reuse it. This avoids extra mapping needed
+            // in DijkstraTransportationPlanner
+            id = std::any_cast<SUniqueIdWithData>(tag).uniqueId;
+        } else {
+            // make sure vertex id is unique
+            do {
+                id = rng();
+            } while (vertices.contains(id));
         }
 
         // we don't mark graph dirty if we just inserted a vertex
