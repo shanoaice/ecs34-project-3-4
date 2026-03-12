@@ -38,7 +38,7 @@ struct CDijkstraTransportationPlanner::SImplementation {
     explicit SImplementation(const std::shared_ptr<SConfiguration> &config)
         : busSystemIndexer(config->BusSystem()) {
         auto deadline = std::chrono::steady_clock::now() +
-                        std::chrono::seconds(config->PrecomputeTime());
+                        std::chrono::seconds(config->PrecomputeTime()) - std::chrono::milliseconds(200);
         this->config = config;
 
         const auto streetMap = config->StreetMap();
