@@ -8,7 +8,6 @@
 #include "TransportationPlanner.h"
 #include <algorithm>
 #include <memory>
-#include <queue>
 #include <unordered_map>
 
 struct CDijkstraTransportationPlanner::SImplementation {
@@ -38,7 +37,7 @@ struct CDijkstraTransportationPlanner::SImplementation {
     explicit SImplementation(const std::shared_ptr<SConfiguration> &config)
         : busSystemIndexer(config->BusSystem()) {
         auto deadline = std::chrono::steady_clock::now() +
-                        std::chrono::seconds(config->PrecomputeTime()) - std::chrono::milliseconds(200);
+                        std::chrono::seconds(5) - std::chrono::milliseconds(200);
         this->config = config;
 
         const auto streetMap = config->StreetMap();
