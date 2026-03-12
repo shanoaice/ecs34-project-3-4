@@ -9,7 +9,7 @@ class CFileDataFactory : public CDataFactory{
 
     public:
         CFileDataFactory(const std::string &path);
-;
+
         std::shared_ptr< CDataSource > CreateSource(const std::string &name) noexcept override;
         std::shared_ptr< CDataSink > CreateSink(const std::string &name) noexcept override;
 };
