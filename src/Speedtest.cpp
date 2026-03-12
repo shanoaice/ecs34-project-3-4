@@ -22,7 +22,7 @@ class CArgumentParser{
         uint64_t DSeed;
         bool DArgumentsValid;
         bool DVerbose;
-        
+
         void PrintSyntax() const;
     public:
         CArgumentParser(const std::vector<std::string> &args);
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]){
 
     if(SpeedTester.RunTest(Parser.Seed(),Parser.NumPoints(),Parser.Verbose())){
         if(SpeedTester.OutputResults(ResultsFactory,Parser.Verbose())){
-            return EXIT_SUCCESS;        
+            return EXIT_SUCCESS;
         }
     }
 
@@ -302,7 +302,7 @@ bool CSpeedTest::RunTest(uint64_t seed, uint64_t numpoints, bool verbose){
         }
         auto SourceNodeID = DPlanner->SortedNodeByIndex(SourceIndex)->ID();
         auto DestNodeID = DPlanner->SortedNodeByIndex(DestIndex)->ID();
-        RandomNodePairs.push_back(std::make_pair(SourceNodeID,DestNodeID));
+        RandomNodePairs.emplace_back(SourceNodeID,DestNodeID);
     }
     DShortestPaths.resize(numpoints);
     DShortestDistance.resize(numpoints);
@@ -333,11 +333,11 @@ bool CSpeedTest::OutputResults(std::shared_ptr<CDataFactory> results, bool verbo
             WriteStringToSink(Brief," " + ShortestPathToNodeString(DShortestPaths[Index]));
         }
         WriteStringToSink(Brief,std::string("\n") + std::to_string(Index) + " FP:" + TimeToString(DFastestTime[Index]));
-        
+
         if(verbose){
             WriteStringToSink(Brief," " + FastestPathToNodeString(DFastestPaths[Index]));
         }
-        WriteStringToSink(Brief,"\n");   
+        WriteStringToSink(Brief,"\n");
     }
     auto SamplesPerDay = long((86400000 - DLoadDurationCount) / (double(DProcessingDurationCount) / DShortestPaths.size()));
     auto MarginOfError = long(double(SamplesPerDay) / sqrt(DShortestPaths.size()));
