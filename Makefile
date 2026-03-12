@@ -55,7 +55,7 @@ $(BINDIR)/speedtest: $(OBJDIR)/Speedtest.o $(addprefix $(OBJDIR)/, $(addsuffix .
 $(BINDIR)/kmlout: $(OBJDIR)/KMLOut.o $(addprefix $(OBJDIR)/, $(addsuffix .o, $(SOURCES)))
 	$(CXX) $(CXXFLAGS) $(DEFINES) $^ -o $@ $(LDFLAGS) -lpthread
 
-binaries: $(addprefix $(BINDIR)/, $(BINARIES))
+binaries: directories $(addprefix $(BINDIR)/, $(BINARIES))
 
 $(OBJDIR)/%.o: $(SOURCE_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(DEFINES) $(INCLUDE) -c $< -o $@
