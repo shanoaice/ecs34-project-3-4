@@ -67,8 +67,9 @@ struct CDijkstraPathRouter::SImplementation {
         // because by default it is not reachable
         // is_dirty = true;
 
-        vertices[id] = std::move(tag);
-        adjancency_list[id] = {};
+        vertices.insert_or_assign(id, std::move(tag));
+        adjancency_list.insert_or_assign(
+            id, std::unordered_map<TVertexID, double>());
 
         return id;
     }
