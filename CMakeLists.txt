@@ -11,7 +11,7 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithD
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_CXX_FLAGS_RELEASE "-O2" CACHE STRING "" FORCE)
 else ()
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -Og" CACHE STRING "" FORCE)
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -Og -fno-omit-frame-pointer" CACHE STRING "" FORCE)
 endif ()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wpedantic -fPIC")
@@ -51,11 +51,11 @@ set_target_properties(ecs34-osm PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin"
 )
 
-#add_executable(speedtest src/Speedtest.cpp)
-#target_link_libraries(speedtest expat ecs34-osm)
+add_executable(speedtest src/Speedtest.cpp)
+target_link_libraries(speedtest expat ecs34-osm)
 
-#add_executable(kmlout src/KMLOut.cpp)
-#target_link_libraries(kmlout expat ecs34-osm)
+add_executable(kmlout src/KMLOut.cpp)
+target_link_libraries(kmlout expat ecs34-osm)
 
 find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)

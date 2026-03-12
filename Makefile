@@ -21,7 +21,7 @@ CFLAGS   += -Wall -Werror -Wpedantic -fPIC
 ifeq ($(RELEASE),1)
 CFLAGS   += -O2
 else
-CFLAGS   += -g -O0
+CFLAGS   += -g -O0 -fno-omit-frame-pointer
 endif
 CXXFLAGS += $(CFLAGS) -std=c++20
 LDFLAGS  += -fuse-ld=$(LD) -lexpat
