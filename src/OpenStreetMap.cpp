@@ -304,6 +304,11 @@ std::size_t COpenStreetMap::WayCount() const noexcept {
 }
 
 std::shared_ptr<CStreetMap::SNode>
+COpenStreetMap::SortedNodeByIndex(std::size_t index) const noexcept {
+    return DImplementation->SortedNodeByIndex(index);
+}
+
+std::shared_ptr<CStreetMap::SNode>
 COpenStreetMap::NodeByIndex(const std::size_t index) const noexcept {
     return DImplementation->NodeByIndex(index);
 }
