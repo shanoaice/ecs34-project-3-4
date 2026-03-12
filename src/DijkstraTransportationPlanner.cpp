@@ -37,6 +37,8 @@ struct CDijkstraTransportationPlanner::SImplementation {
 
     explicit SImplementation(const std::shared_ptr<SConfiguration> &config)
         : busSystemIndexer(config->BusSystem()) {
+        auto deadline = std::chrono::steady_clock::now() +
+                        std::chrono::seconds(config->PrecomputeTime());
         this->config = config;
 
         const auto streetMap = config->StreetMap();
@@ -167,6 +169,10 @@ struct CDijkstraTransportationPlanner::SImplementation {
                                         false);
             }
         }
+
+        shortest_router.Precompute(deadline);
+        walk_bus_router.Precompute(deadline);
+        walk_bike_router.Precompute(deadline);
     }
 
     std::shared_ptr<CStreetMap::SNode>
