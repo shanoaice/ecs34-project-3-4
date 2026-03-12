@@ -2,8 +2,12 @@
 #include "DijkstraPathRouter_p.h"
 
 #include <algorithm>
+#include <assert.h>
+#include <iostream>
 #include <queue>
 #include <random>
+#include <stop_token>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -14,11 +18,14 @@ struct CDijkstraPathRouter::SImplementation {
                             std::vector<std::pair<double, TVertexID>>,
                             std::greater<>>;
 
+    using adjacency_list_t =
+        std::unordered_map<TVertexID, std::unordered_map<TVertexID, double>>;
+
     struct DijkstraSearchState {
         std::unordered_map<TVertexID, TVertexID> path;
         std::unordered_map<TVertexID, double> distance;
         min_vertex_pq pq;
-        std::unordered_set<TVertexID> visited;
+        //std::unordered_set<TVertexID> visited;
         bool started = false;
     };
 
@@ -28,10 +35,9 @@ struct CDijkstraPathRouter::SImplementation {
     std::mt19937_64 rng{seed};
 
     std::unordered_map<TVertexID, std::any> vertices;
-    std::unordered_map<TVertexID, std::unordered_map<TVertexID, double>>
-        adjancency_list;
+    adjacency_list_t adjacency_list;
 
-    const double epsilon = 1.0e-5;
+    static constexpr double epsilon = 1.0e-5;
 
     bool is_dirty = false;
 
@@ -68,7 +74,7 @@ struct CDijkstraPathRouter::SImplementation {
         // is_dirty = true;
 
         vertices.insert_or_assign(id, std::move(tag));
-        adjancency_list.insert_or_assign(
+        adjacency_list.insert_or_assign(
             id, std::unordered_map<TVertexID, double>());
 
         return id;
@@ -89,17 +95,17 @@ struct CDijkstraPathRouter::SImplementation {
         is_dirty = true;
 
         // compare with epsilon for double fp error
-        if (const auto src_it = adjancency_list[src].find(dest);
-            src_it == adjancency_list[src].cend() ||
+        if (const auto src_it = adjacency_list[src].find(dest);
+            src_it == adjacency_list[src].cend() ||
             weight < src_it->second - epsilon) {
-            adjancency_list[src].insert_or_assign(dest, weight);
+            adjacency_list[src].insert_or_assign(dest, weight);
         }
 
         if (bidir) {
-            if (const auto dst_it = adjancency_list[dest].find(src);
-                dst_it == adjancency_list[dest].cend() ||
+            if (const auto dst_it = adjacency_list[dest].find(src);
+                dst_it == adjacency_list[dest].cend() ||
                 weight < dst_it->second - epsilon) {
-                adjancency_list[dest].insert_or_assign(src, weight);
+                adjacency_list[dest].insert_or_assign(src, weight);
             }
         }
 
@@ -128,7 +134,7 @@ struct CDijkstraPathRouter::SImplementation {
         // completely eliminate any extra calculation, but that is costly on
         // space and I doubt this will be a hot path
         if (!is_dirty && state.contains(src) &&
-            state[src]->visited.contains(dest)) {
+            state[src]->distance.contains(dest)) {
             path.emplace_back(dest);
             while (path.back() != src) {
                 path.emplace_back(state[src]->path[path.back()]);
@@ -148,12 +154,12 @@ struct CDijkstraPathRouter::SImplementation {
         auto &tracked_path = state[src]->path;
         auto &dist = state[src]->distance;
         auto &pq = state[src]->pq;
-        auto &visited = state[src]->visited;
+        //auto &visited = state[src]->visited;
 
         if (pq.empty()) {
             if (state[src]->started) {
                 // if it is started and queue is still empty, while the dest is
-                // not in visited set, it is unreachable. return NoPathExists
+                // not calculated, it is unreachable. return NoPathExists
                 return NoPathExists;
             }
             // otherwise, we insert the source and start the search
@@ -174,15 +180,18 @@ struct CDijkstraPathRouter::SImplementation {
                 target_vertex_it->second < u_weight - epsilon)
                 continue;
 
-            visited.insert(u);
+            //visited.insert(u);
 
-            // if we reached the destination vertex, exit early
-            if (u == dest) {
-                break;
-            }
+            // now that we implemented precompute, it would be better to not
+            // exit early, so that we save some space by not requiring a visited
+            // set.
+            //// if we reached the destination vertex, exit early
+            // if (u == dest) {
+            //     break;
+            // }
 
-            if (const auto u_adj_list_it = adjancency_list.find(u);
-                u_adj_list_it != adjancency_list.cend()) {
+            if (const auto u_adj_list_it = adjacency_list.find(u);
+                u_adj_list_it != adjacency_list.cend()) {
                 for (const auto [v, v_weight] : u_adj_list_it->second) {
                     const auto new_distance = dist[u] + v_weight;
                     const auto v_distance_it = dist.find(v);
@@ -218,6 +227,138 @@ struct CDijkstraPathRouter::SImplementation {
         // return the value
         return dest_distance_it->second;
     }
+
+    struct FShortPathPrecomputeWorker {
+        const TVertexID src;
+        std::shared_ptr<DijkstraSearchState> state;
+        const adjacency_list_t &adjacency_list;
+        const std::stop_token &stop_token;
+
+        void operator()() const {
+            // some QoL shorthands
+            auto &tracked_path = state->path;
+            auto &dist = state->distance;
+            auto &pq = state->pq;
+            //auto &visited = state->visited;
+
+            if (pq.empty()) {
+                if (state->started) {
+                    // if it is started and queue is still empty, we probably
+                    // had done precomputing. exit.
+                    return;
+                }
+                // otherwise, we insert the source and start the search
+                pq.emplace(0, src);
+                dist.insert_or_assign(src, 0);
+                state->started = true;
+            }
+
+            while (!(pq.empty() || stop_token.stop_requested())) {
+                const auto u_weight = pq.top().first;
+                const auto u = pq.top().second;
+                pq.pop();
+
+                // lazy delete -- if the path in priority_queue is not shorter
+                // than the recorded distance, we skip it
+                if (const auto target_vertex_it = dist.find(u);
+                    target_vertex_it != dist.cend() &&
+                    target_vertex_it->second < u_weight - epsilon)
+                    continue;
+
+                //visited.insert(u);
+
+                if (const auto u_adj_list_it = adjacency_list.find(u);
+                    u_adj_list_it != adjacency_list.cend()) {
+                    for (const auto [v, v_weight] : u_adj_list_it->second) {
+                        const auto new_distance = dist[u] + v_weight;
+                        const auto v_distance_it = dist.find(v);
+
+                        if (v_distance_it == dist.cend() ||
+                            new_distance < v_distance_it->second - epsilon) {
+                            dist.insert_or_assign(v, new_distance);
+                            tracked_path.insert_or_assign(v, u);
+                            pq.emplace(new_distance, v);
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    bool
+    Precompute(const std::chrono::steady_clock::time_point deadline) noexcept {
+
+        if (const auto time_available =
+                deadline - std::chrono::steady_clock::now();
+            time_available <= std::chrono::steady_clock::duration::zero()) {
+            return false;
+        }
+
+        // use core count - 1 or 1
+        const auto concurrency = []() {
+            const auto hardware_concurrency =
+                std::jthread::hardware_concurrency();
+            return hardware_concurrency > 1 ? hardware_concurrency - 1 : 1;
+        }();
+
+        std::vector<TVertexID> pending_sources;
+
+        // add all ids into pending_sources
+        for (const auto &[id, _] : vertices) {
+            pending_sources.emplace_back(id);
+            if (!state.contains(id) || is_dirty) {
+                state.insert_or_assign(id,
+                                       std::make_shared<DijkstraSearchState>());
+            }
+        }
+
+        // if nothing to precompute, return
+        if (pending_sources.empty()) {
+            is_dirty = false;
+            return true;
+        }
+
+        std::atomic<std::size_t> next_index{0};
+        std::atomic<std::size_t> finish_count{0};
+
+        std::vector<std::jthread> threads;
+        threads.reserve(concurrency);
+
+        auto worker_fn = [&](const std::stop_token &stop_token) {
+            while (!stop_token.stop_requested()) {
+                const auto idx = next_index.fetch_add(1);
+
+                if (idx >= pending_sources.size())
+                    return;
+
+                auto src = pending_sources[idx];
+
+                FShortPathPrecomputeWorker{.src = src,
+                                           .state = state[src],
+                                           .adjacency_list = adjacency_list,
+                                           .stop_token = stop_token}();
+
+                ++finish_count;
+            }
+        };
+
+        for (std::size_t i = 0; i < concurrency; ++i) {
+            threads.emplace_back(worker_fn);
+        }
+
+        while (std::chrono::steady_clock::now() < deadline) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            if (finish_count.load() == pending_sources.size()) {
+                break;
+            }
+        }
+
+        for (auto &thread : threads) {
+            thread.request_stop();
+        }
+
+        return true;
+    }
 };
 
 CDijkstraPathRouter::CDijkstraPathRouter() {
@@ -244,13 +385,12 @@ bool CDijkstraPathRouter::AddEdge(const TVertexID src, const TVertexID dest,
 }
 
 bool CDijkstraPathRouter::Precompute(
-    std::chrono::steady_clock::time_point deadline) noexcept {
-    // TODO
-    return true;
+    const std::chrono::steady_clock::time_point deadline) noexcept {
+    return DImplementation->Precompute(deadline);
 }
 
 double
-CDijkstraPathRouter::FindShortestPath(TVertexID src, TVertexID dest,
+CDijkstraPathRouter::FindShortestPath(const TVertexID src, const TVertexID dest,
                                       std::vector<TVertexID> &path) noexcept {
     return DImplementation->FindShortestPath(src, dest, path);
 }
