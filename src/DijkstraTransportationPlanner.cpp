@@ -62,8 +62,8 @@ struct CDijkstraTransportationPlanner::SImplementation {
                                     ? way->GetAttribute("oneway") == "yes"
                                     : false;
             const bool bicycle = way->HasAttribute("bicycle")
-                                     ? way->GetAttribute("bicycle") == "yes"
-                                     : false;
+                                     ? way->GetAttribute("bicycle") != "no"
+                                     : true;
 
             double speedLimit = config->DefaultSpeedLimit();
             if (way->HasAttribute("maxspeed")) {
@@ -91,23 +91,24 @@ struct CDijkstraTransportationPlanner::SImplementation {
 
                 // shortest paths ignore bicycle property, but will not walk
                 // back
-                shortest_router.AddEdge(way->GetNodeID(0),
-                                        way->GetNodeID(way->NodeCount() - 1),
-                                        length, !oneway);
+                shortest_router.AddEdge(way->GetNodeID(node_index - 1),
+                                        way->GetNodeID(node_index), length,
+                                        !oneway);
 
                 // add walking time. Walking is always bidir for fastest path
-                walk_bus_router.AddEdge(way->GetNodeID(0),
-                                        way->GetNodeID(way->NodeCount() - 1),
+                walk_bus_router.AddEdge(way->GetNodeID(node_index - 1),
+                                        way->GetNodeID(node_index),
                                         length / config->WalkSpeed(), true);
-                walk_bike_router.AddEdge(way->GetNodeID(0),
-                                         way->GetNodeID(way->NodeCount() - 1),
+                walk_bike_router.AddEdge(way->GetNodeID(node_index - 1),
+                                         way->GetNodeID(node_index),
                                          length / config->WalkSpeed(), true);
 
                 // add bicycling time
                 if (bicycle) {
-                    walk_bike_router.AddEdge(
-                        way->GetNodeID(0), way->GetNodeID(way->NodeCount() - 1),
-                        length / config->BikeSpeed(), !oneway);
+                    walk_bike_router.AddEdge(way->GetNodeID(node_index - 1),
+                                             way->GetNodeID(node_index),
+                                             length / config->BikeSpeed(),
+                                             !oneway);
                 }
 
                 // store edge info for quick lookup
@@ -152,7 +153,14 @@ struct CDijkstraTransportationPlanner::SImplementation {
                         segmentSpeed = it->second.speedLimit;
                     }
 
-                    totalTime += distance / segmentSpeed;
+                    // get the actual segment distance
+                    auto node1 = config->StreetMap()->NodeByID(fromNode);
+                    auto node2 = config->StreetMap()->NodeByID(toNode);
+                    double segmentDist =
+                        SGeographicUtils::HaversineDistanceInMiles(
+                            node1->Location(), node2->Location());
+
+                    totalTime += segmentDist / segmentSpeed;
                 }
 
                 walk_bus_router.AddEdge(srcNodeID, destNodeID, totalTime,
@@ -215,6 +223,21 @@ struct CDijkstraTransportationPlanner::SImplementation {
         std::vector<TNodeID> busPath;
         auto busTime = walk_bus_router.FindShortestPath(src, dest, busPath);
 
+        // calculate bus stop times for bus path before comparison
+        double busStopTime = 0.0;
+        if (!busPath.empty()) {
+            int busStopCount = 0;
+            for (std::size_t i = 1; i < busPath.size(); ++i) {
+                if (busSystemIndexer.RouteBetweenNodeIDs(busPath[i - 1],
+                                                         busPath[i])) {
+                    busStopCount++;
+                }
+            }
+            // N bus stop times (board at start, alight at end)
+            busStopTime = busStopCount * config->BusStopTime() / 3600.0;
+        }
+        double adjustedBusTime = busTime + busStopTime;
+
         std::vector<TNodeID> *chosenPath = nullptr;
         bool isBikePath = false;
         double chosenTime = 0.0;
@@ -223,10 +246,11 @@ struct CDijkstraTransportationPlanner::SImplementation {
             busTime == CPathRouter::NoPathExists) {
             return CPathRouter::NoPathExists;
         }
-        if (bikeTime == CPathRouter::NoPathExists || bikeTime >= busTime) {
+        if (bikeTime == CPathRouter::NoPathExists ||
+            bikeTime >= adjustedBusTime) {
             chosenPath = &busPath;
             isBikePath = false;
-            chosenTime = busTime;
+            chosenTime = adjustedBusTime;
         } else {
             chosenPath = &bikePath;
             isBikePath = true;
@@ -239,11 +263,14 @@ struct CDijkstraTransportationPlanner::SImplementation {
             ETransportationMode mode;
 
             if (i == 0) {
-                TNodeID nextNode = nodePath[i + 1];
+                // for bus paths, first segment is always Walk (walk to bus
+                // stop) for bike paths, use GetBikeModeForEdge to decide walk
+                // or bike
                 if (isBikePath) {
+                    TNodeID nextNode = nodePath[i + 1];
                     mode = GetBikeModeForEdge(currentNode, nextNode);
                 } else {
-                    mode = GetBusModeForEdge(currentNode, nextNode);
+                    mode = ETransportationMode::Walk;
                 }
             } else {
                 TNodeID prevNode = nodePath[i - 1];
@@ -262,6 +289,11 @@ struct CDijkstraTransportationPlanner::SImplementation {
 
     ETransportationMode GetBikeModeForEdge(TNodeID from, TNodeID to) const {
         auto it = edgeInfoMap.find({from, to});
+        if (it != edgeInfoMap.end() && it->second.canBike) {
+            return ETransportationMode::Bike;
+        }
+        // check reverse direction
+        it = edgeInfoMap.find({to, from});
         if (it != edgeInfoMap.end() && it->second.canBike) {
             return ETransportationMode::Bike;
         }
@@ -530,5 +562,5 @@ CDijkstraTransportationPlanner::FindFastestPath(TNodeID src, TNodeID dest,
 
 bool CDijkstraTransportationPlanner::GetPathDescription(
     const std::vector<TTripStep> &path, std::vector<std::string> &desc) const {
-    return true;
+    return DImplementation->GetPathDescription(path, desc);
 }
