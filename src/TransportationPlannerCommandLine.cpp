@@ -1,8 +1,8 @@
 #include "TransportationPlannerCommandLine.h"
-#include "StringUtils.h"
 #include "GeographicUtils.h"
-#include <iomanip>
+#include "StringUtils.h"
 #include <cmath>
+#include <iomanip>
 
 struct CTransportationPlannerCommandLine::SImplementation {
     std::shared_ptr<CDataSource> CmdSrc;
@@ -20,7 +20,11 @@ struct CTransportationPlannerCommandLine::SImplementation {
     bool LastWasFastest = false;
     bool HasValidPath = false;
 
-    SImplementation(std::shared_ptr<CDataSource> cmdsrc, std::shared_ptr<CDataSink> outsink, std::shared_ptr<CDataSink> errsink, std::shared_ptr<CDataFactory> results, std::shared_ptr<CTransportationPlanner> planner) {
+    SImplementation(std::shared_ptr<CDataSource> cmdsrc,
+                    std::shared_ptr<CDataSink> outsink,
+                    std::shared_ptr<CDataSink> errsink,
+                    std::shared_ptr<CDataFactory> results,
+                    std::shared_ptr<CTransportationPlanner> planner) {
         CmdSrc = cmdsrc;
         OutSink = outsink;
         ErrSink = errsink;
@@ -42,7 +46,7 @@ struct CTransportationPlannerCommandLine::SImplementation {
         return SGeographicUtils::ConvertLLToDMS(loc);
     }
     //     // format lat, N is positive, S is negative
-    //     char NS = 'N'; 
+    //     char NS = 'N';
     //     if (lat < 0) {
     //         NS = 'S';
     //     }
@@ -51,7 +55,8 @@ struct CTransportationPlannerCommandLine::SImplementation {
     //     int latM = (int)((absLat - latD) * 60);
     //     int latS = (int)std::round(((absLat - latD) * 60 - latM) * 60);
     //     std::string s1;
-    //     s1 = std::to_string(latD) + "d " + std::to_string(latM) + "' " + std::to_string(latS) + "\" " + NS;
+    //     s1 = std::to_string(latD) + "d " + std::to_string(latM) + "' " +
+    //     std::to_string(latS) + "\" " + NS;
 
     //     // format lon, E is positive, W is negative
     //     char EW = 'E';
@@ -63,8 +68,8 @@ struct CTransportationPlannerCommandLine::SImplementation {
     //     int lonM = (int)((absLon - lonD) * 60);
     //     int lonS = (int)std::round(((absLon - lonD) * 60 - lonM) * 60);
     //     std::string s2;
-    //     s2 = std::to_string(lonD) + "d " + std::to_string(lonM) + "' " + std::to_string(lonS) + "\" " + EW;
-    //     return s1 + ", " + s2;
+    //     s2 = std::to_string(lonD) + "d " + std::to_string(lonM) + "' " +
+    //     std::to_string(lonS) + "\" " + EW; return s1 + ", " + s2;
 
     // format one number with hour unit into: x hour, x minute, x second
     std::string FormatTime(double hours) {
@@ -81,7 +86,7 @@ struct CTransportationPlannerCommandLine::SImplementation {
             stime = stime + std::to_string(m) + " min ";
         }
         if (s > 0 || (h == 0 && m == 0)) {
-            stime = stime + std::to_string(s) + " sec.";
+            stime = stime + std::to_string(s) + " sec ";
         }
         return StringUtils::Strip(stime);
     }
@@ -91,7 +96,8 @@ struct CTransportationPlannerCommandLine::SImplementation {
         char c;
         // loop through CmdSrc, store every character in line
         while (CmdSrc->Get(c)) {
-            if (c == '\n') return true;
+            if (c == '\n')
+                return true;
             line += c;
         }
         return !line.empty();
@@ -113,21 +119,28 @@ struct CTransportationPlannerCommandLine::SImplementation {
             if (cmd == "help") {
                 // store menu information
                 std::string help_content = "";
-                help_content += "------------------------------------------------------------------------\n";
+                help_content += "----------------------------------------------"
+                                "--------------------------\n";
                 help_content += "help     Display this help menu\n";
                 help_content += "exit     Exit the program\n";
-                help_content += "count    Output the number of nodes in the map\n";
+                help_content +=
+                    "count    Output the number of nodes in the map\n";
                 help_content += "node     Syntax \"node [0, count)\" \n";
-                help_content += "         Will output node ID and Lat/Lon for node\n";
+                help_content +=
+                    "         Will output node ID and Lat/Lon for node\n";
                 help_content += "fastest  Syntax \"fastest start end\" \n";
-                help_content += "         Calculates the time for fastest path from start to end\n";
+                help_content += "         Calculates the time for fastest path "
+                                "from start to end\n";
                 help_content += "shortest Syntax \"shortest start end\" \n";
-                help_content += "         Calculates the distance for the shortest path from start to end\n";
-                help_content += "save     Saves the last calculated path to file\n";
-                help_content += "print    Prints the steps for the last calculated path\n";
+                help_content += "         Calculates the distance for the "
+                                "shortest path from start to end\n";
+                help_content +=
+                    "save     Saves the last calculated path to file\n";
+                help_content +=
+                    "print    Prints the steps for the last calculated path\n";
 
                 Write(OutSink, help_content);
-            } 
+            }
 
             else if (cmd == "exit") {
                 return true; // end loop
@@ -135,15 +148,15 @@ struct CTransportationPlannerCommandLine::SImplementation {
 
             else if (cmd == "count") {
                 std::size_t node_num = Planner->NodeCount();
-                std:: string result = std::to_string(node_num) + " nodes\n";
+                std::string result = std::to_string(node_num) + " nodes\n";
                 Write(OutSink, result);
             }
-            
+
             else if (cmd == "node") {
                 // if not enough argument
                 if (words.size() < 2) {
                     Write(ErrSink, "Invalid node command, see help.\n");
-                } 
+                }
 
                 else {
                     try {
@@ -151,15 +164,19 @@ struct CTransportationPlannerCommandLine::SImplementation {
                         size_t node_num = Planner->NodeCount();
                         // check out of bound
                         if (index >= node_num) {
-                            Write(ErrSink, "Invalid node parameter, see help.\n");
-                        } 
-                        else {
-                            // use index, get the node, location, and format location
+                            Write(ErrSink,
+                                  "Invalid node parameter, see help.\n");
+                        } else {
+                            // use index, get the node, location, and format
+                            // location
                             auto node = Planner->SortedNodeByIndex(index);
                             auto location = node->Location();
-                            std::string formated_loc = FormatLocation(location.DLatitude, location.DLongitude);
-                            std::string result = "Node " + std::to_string(index) + ": id = ";
-                            result = result + std::to_string(node->ID()) + " is at " + formated_loc + "\n";
+                            std::string formated_loc = FormatLocation(
+                                location.DLatitude, location.DLongitude);
+                            std::string result =
+                                "Node " + std::to_string(index) + ": id = ";
+                            result = result + std::to_string(node->ID()) +
+                                     " is at " + formated_loc + "\n";
                             Write(OutSink, result);
                         }
                     } catch (...) {
@@ -173,62 +190,63 @@ struct CTransportationPlannerCommandLine::SImplementation {
                 // need 3: command, start ID, end ID
                 if (words.size() < 3) {
                     Write(ErrSink, "Invalid shortest command, see help.\n");
-                }
-                else {
+                } else {
                     try {
                         // convert string in argument into unsign long long
                         uint64_t start = std::stoull(words[1]);
                         uint64_t end = std::stoull(words[2]);
-                        double d = Planner->FindShortestPath(start, end, LastShortestPath);
-                        // if value returned is not -1, means got the distance 
+                        double d = Planner->FindShortestPath(start, end,
+                                                             LastShortestPath);
+                        // if value returned is not -1, means got the distance
                         if (d != -1.0) {
-                            HasValidPath = true; 
+                            HasValidPath = true;
                             LastStartNodeID = words[1];
                             LastEndNodeID = words[2];
                             LastWasFastest = false;
                             LastPathValue = d;
                             char buffer[64];
-                            // only keep one decimal 
+                            // only keep one decimal
                             sprintf(buffer, "%.1f", LastPathValue);
                             std::string result = "Shortest path is ";
                             result = result + buffer + " mi.\n";
                             Write(OutSink, result);
                         }
-                    } 
-                    catch (...) {
+                    } catch (...) {
                         // error is start / end is not number
-                        Write(ErrSink, "Invalid shortest parameter, see help.\n");
+                        Write(ErrSink,
+                              "Invalid shortest parameter, see help.\n");
                     }
                 }
             }
-            
+
             else if (cmd == "fastest") {
                 // need 3: command, start ID, end ID
                 if (words.size() < 3) {
                     Write(ErrSink, "Invalid fastest command, see help.\n");
-                }
-                else {
+                } else {
                     try {
                         // convert string from argument into unsign long long
                         uint64_t start = std::stoull(words[1]);
                         uint64_t end = std::stoull(words[2]);
-                        double t = Planner->FindFastestPath(start, end, LastFastestPath);
+                        double t = Planner->FindFastestPath(start, end,
+                                                            LastFastestPath);
                         // if successfully got a valid time
                         if (t != -1.0) {
-                            HasValidPath = true; 
+                            HasValidPath = true;
                             LastWasFastest = true;
                             LastStartNodeID = words[1];
                             LastEndNodeID = words[2];
                             LastPathValue = t;
                             // format the time
                             std::string formated_t = FormatTime(t);
-                            std::string result = "Fastest path takes " + formated_t + "\n";
+                            std::string result =
+                                "Fastest path takes " + formated_t + ".\n";
                             Write(OutSink, result);
                         }
-                    } 
-                    catch (...) {
+                    } catch (...) {
                         // if start or end is not valid number
-                        Write(ErrSink, "Invalid fastest parameter, see help.\n");
+                        Write(ErrSink,
+                              "Invalid fastest parameter, see help.\n");
                     }
                 }
             }
@@ -237,11 +255,11 @@ struct CTransportationPlannerCommandLine::SImplementation {
                 // check whether got valid path
                 if (HasValidPath == false) {
                     Write(ErrSink, "No valid path to print, see help.\n");
-                }
-                else {
+                } else {
                     // assign final fastest path into description
                     std::vector<std::string> descriptions;
-                    if (Planner->GetPathDescription(LastFastestPath, descriptions)) {
+                    if (Planner->GetPathDescription(LastFastestPath,
+                                                    descriptions)) {
                         // loop to write out
                         for (size_t i = 0; i < descriptions.size(); i++) {
                             std::string line = descriptions[i] + "\n";
@@ -255,13 +273,15 @@ struct CTransportationPlannerCommandLine::SImplementation {
                 if (HasValidPath == false) {
                     std::string result = "No valid path to save, see help.\n";
                     Write(ErrSink, result);
-                }
-                else {
+                } else {
                     // prepare file name
-                    std::string val_str = std::to_string(LastPathValue); // convert value to string
+                    std::string val_str = std::to_string(
+                        LastPathValue); // convert value to string
                     // LastStartNodeID_LastEndNodeID_hr.csv
-                    std::string filename = LastStartNodeID + "_" + LastEndNodeID + "_" + std::to_string(LastPathValue) + "hr.csv";
-                    
+                    std::string filename =
+                        LastStartNodeID + "_" + LastEndNodeID + "_" +
+                        std::to_string(LastPathValue) + "hr.csv";
+
                     // build a file sink
                     auto fileSink = Results->CreateSink(filename);
 
@@ -276,30 +296,33 @@ struct CTransportationPlannerCommandLine::SImplementation {
                             // get transportation mode
                             auto mode = LastFastestPath[i].first;
                             std::string mode_str;
-                            if (mode == CTransportationPlanner::ETransportationMode::Bike) {
+                            if (mode == CTransportationPlanner::
+                                            ETransportationMode::Bike) {
                                 mode_str = "Bike";
-                            } 
-                            else if (mode == CTransportationPlanner::ETransportationMode::Bus) {
+                            } else if (mode == CTransportationPlanner::
+                                                   ETransportationMode::Bus) {
                                 mode_str = "Bus";
-                            }
-                            else{
+                            } else {
                                 mode_str = "Walk";
                             }
                             // get node ID
-                            std::string node_id = std::to_string(LastFastestPath[i].second);
+                            std::string node_id =
+                                std::to_string(LastFastestPath[i].second);
 
                             std::string line = "\n" + mode_str + "," + node_id;
                             Write(fileSink, line);
                         }
                         // finish saving
-                        std::string success = "Path saved to <results>/" + filename + "\n";
+                        std::string success =
+                            "Path saved to <results>/" + filename + "\n";
                         Write(OutSink, success);
                     }
                 }
             }
 
             else {
-                std::string unknown = "Unknown command \"" + cmd + "\" type help for help.\n";
+                std::string unknown =
+                    "Unknown command \"" + cmd + "\" type help for help.\n";
                 Write(ErrSink, unknown);
             }
             Write(OutSink, "> ");
@@ -308,11 +331,16 @@ struct CTransportationPlannerCommandLine::SImplementation {
     }
 };
 
-CTransportationPlannerCommandLine::CTransportationPlannerCommandLine(std::shared_ptr<CDataSource> cmdsrc, std::shared_ptr<CDataSink> outsink, std::shared_ptr<CDataSink> errsink, std::shared_ptr<CDataFactory> results, std::shared_ptr<CTransportationPlanner> planner) {
-    DImplementation = std::make_unique<SImplementation>(cmdsrc, outsink, errsink, results, planner);
+CTransportationPlannerCommandLine::CTransportationPlannerCommandLine(
+    std::shared_ptr<CDataSource> cmdsrc, std::shared_ptr<CDataSink> outsink,
+    std::shared_ptr<CDataSink> errsink, std::shared_ptr<CDataFactory> results,
+    std::shared_ptr<CTransportationPlanner> planner) {
+    DImplementation = std::make_unique<SImplementation>(
+        cmdsrc, outsink, errsink, results, planner);
 }
 
-CTransportationPlannerCommandLine::~CTransportationPlannerCommandLine() = default;
+CTransportationPlannerCommandLine::~CTransportationPlannerCommandLine() =
+    default;
 
 bool CTransportationPlannerCommandLine::ProcessCommands() {
     return DImplementation->Process();
