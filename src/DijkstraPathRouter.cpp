@@ -30,16 +30,28 @@ struct CDijkstraPathRouter::SImplementation {
     using vertices_t =
         std::unordered_map<TVertexID, std::pair<vertices_index, std::any>>;
 
-    struct DijkstraSearchState {
+    struct SDijkstraSearchState {
         // std::unordered_map<TVertexID, TVertexID> path;
         std::vector<double> distance;
         min_vertex_pq pq;
         // std::unordered_set<TVertexID> visited;
         bool started = false;
 
-        DijkstraSearchState() = delete;
-        DijkstraSearchState(const std::size_t vertex_count)
+        SDijkstraSearchState() = delete;
+        SDijkstraSearchState(const std::size_t vertex_count)
             : distance(vertex_count, std::numeric_limits<double>::infinity()) {}
+    };
+
+    struct STempEdge {
+        std::size_t u_by_idx;
+        std::size_t v_by_idx;
+        double weight;
+
+        std::partial_ordering operator<=>(const STempEdge &rhs) const {
+            if (const auto cmp = u_by_idx <=> rhs.u_by_idx; cmp != std::strong_ordering::equal) return cmp;
+            if (const auto cmp = v_by_idx <=> rhs.v_by_idx; cmp != std::strong_ordering::equal) return cmp;
+            return weight <=> rhs.weight;
+        }
     };
 
     std::random_device rng_source;
@@ -52,6 +64,14 @@ struct CDijkstraPathRouter::SImplementation {
     adjacency_list_t adjacency_list;
     adjacency_list_t reverse_adjacency_list;
 
+    std::vector<std::size_t> adj_matrix_row_ptr;
+    std::vector<std::size_t> adj_matrix_col_idx;
+    std::vector<double> adj_matrix_weight;
+
+    std::vector<std::size_t> rev_adj_matrix_row_ptr;
+    std::vector<std::size_t> rev_adj_matrix_col_idx;
+    std::vector<double> rev_adj_matrix_weight;
+
     static constexpr double epsilon = 1.0e-6;
     static constexpr double kInf = std::numeric_limits<double>::infinity();
 
@@ -60,7 +80,7 @@ struct CDijkstraPathRouter::SImplementation {
     // This map's key is the source vertex id
     // value is a pointer to the struct storing the Dijkstra search state on the
     // source vertex
-    std::unordered_map<TVertexID, std::shared_ptr<DijkstraSearchState>> state;
+    std::unordered_map<TVertexID, std::shared_ptr<SDijkstraSearchState>> state;
 
     // state object is wrapped in shared_ptr because they might have to
     // be sent across threads in precompute. We don't need a lock because no two
@@ -251,7 +271,7 @@ struct CDijkstraPathRouter::SImplementation {
         // src yet, we (re)initialize the DijkstraSearchState and store it.
         if (is_dirty || !state.contains(src)) {
             state.insert_or_assign(
-                src, std::make_shared<DijkstraSearchState>(vertices.size()));
+                src, std::make_shared<SDijkstraSearchState>(vertices.size()));
         }
 
         // some QoL shorthands
@@ -384,7 +404,7 @@ struct CDijkstraPathRouter::SImplementation {
 
     struct FShortPathPrecomputeWorker {
         const TVertexID src;
-        std::shared_ptr<DijkstraSearchState> state;
+        std::shared_ptr<SDijkstraSearchState> state;
         const adjacency_list_t &adjacency_list;
         const vertices_t &vertices;
         const std::stop_token &stop_token;
@@ -474,7 +494,7 @@ struct CDijkstraPathRouter::SImplementation {
             pending_sources.emplace_back(id);
             if (!state.contains(id) || is_dirty) {
                 state.insert_or_assign(
-                    id, std::make_shared<DijkstraSearchState>(vertices.size()));
+                    id, std::make_shared<SDijkstraSearchState>(vertices.size()));
             }
         }
 
