@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <iostream>
 #include <limits>
+#include <numeric>
 #include <queue>
 #include <random>
 #include <stdexcept>
@@ -18,17 +19,18 @@
 #include <vector>
 
 struct CDijkstraPathRouter::SImplementation {
-    using min_vertex_pq =
-        std::priority_queue<std::pair<double, TVertexID>,
-                            std::vector<std::pair<double, TVertexID>>,
-                            std::greater<>>;
 
-    using adjacency_list_t =
-        std::unordered_map<TVertexID, std::unordered_map<TVertexID, double>>;
+    // using adjacency_list_t =
+    //     std::unordered_map<TVertexID, std::unordered_map<TVertexID, double>>;
 
-    using vertices_index = std::size_t;
+    using TVertexIndex = std::size_t;
     using vertices_t =
-        std::unordered_map<TVertexID, std::pair<vertices_index, std::any>>;
+        std::unordered_map<TVertexID, std::pair<TVertexIndex, std::any>>;
+
+    using min_vertex_pq =
+        std::priority_queue<std::pair<double, TVertexIndex>,
+                            std::vector<std::pair<double, TVertexIndex>>,
+                            std::greater<>>;
 
     struct SDijkstraSearchState {
         // std::unordered_map<TVertexID, TVertexID> path;
@@ -42,16 +44,37 @@ struct CDijkstraPathRouter::SImplementation {
             : distance(vertex_count, std::numeric_limits<double>::infinity()) {}
     };
 
-    struct STempEdge {
+    struct SEdge {
         std::size_t u_by_idx;
         std::size_t v_by_idx;
         double weight;
 
-        std::partial_ordering operator<=>(const STempEdge &rhs) const {
-            if (const auto cmp = u_by_idx <=> rhs.u_by_idx; cmp != std::strong_ordering::equal) return cmp;
-            if (const auto cmp = v_by_idx <=> rhs.v_by_idx; cmp != std::strong_ordering::equal) return cmp;
-            return weight <=> rhs.weight;
+        std::weak_ordering operator<=>(const SEdge &rhs) const {
+            if (const auto cmp = u_by_idx <=> rhs.u_by_idx;
+                cmp != std::strong_ordering::equal)
+                return cmp;
+            if (const auto cmp = v_by_idx <=> rhs.v_by_idx;
+                cmp != std::strong_ordering::equal)
+                return cmp;
+
+            if (const auto lhs_nan = std::isnan(this->weight),
+                rhs_nan = std::isnan(rhs.weight);
+                !(lhs_nan || rhs_nan)) {
+                if (weight < rhs.weight)
+                    return std::weak_ordering::less;
+                if (weight > rhs.weight)
+                    return std::weak_ordering::greater;
+                return std::weak_ordering::equivalent;
+            } else {
+                // treat NaNs as equivalent and sort NaNs to the end if not both
+                if (lhs_nan && rhs_nan)
+                    return std::weak_ordering::equivalent;
+                return lhs_nan ? std::weak_ordering::greater
+                               : std::weak_ordering::less;
+            }
         }
+
+        bool operator==(const SEdge &) const = default;
     };
 
     std::random_device rng_source;
@@ -61,8 +84,8 @@ struct CDijkstraPathRouter::SImplementation {
 
     std::vector<TVertexID> index_to_id;
     vertices_t vertices;
-    adjacency_list_t adjacency_list;
-    adjacency_list_t reverse_adjacency_list;
+    // adjacency_list_t adjacency_list;
+    // adjacency_list_t reverse_adjacency_list;
 
     std::vector<std::size_t> adj_matrix_row_ptr;
     std::vector<std::size_t> adj_matrix_col_idx;
@@ -72,15 +95,19 @@ struct CDijkstraPathRouter::SImplementation {
     std::vector<std::size_t> rev_adj_matrix_col_idx;
     std::vector<double> rev_adj_matrix_weight;
 
-    static constexpr double epsilon = 1.0e-6;
-    static constexpr double kInf = std::numeric_limits<double>::infinity();
+    std::vector<SEdge> raw_edges;
 
-    bool is_dirty = false;
+    static constexpr double epsilon = 1.0e-6;
+    static constexpr double double_inf =
+        std::numeric_limits<double>::infinity();
+
+    bool is_graph_dirty = false;
 
     // This map's key is the source vertex id
     // value is a pointer to the struct storing the Dijkstra search state on the
     // source vertex
-    std::unordered_map<TVertexID, std::shared_ptr<SDijkstraSearchState>> state;
+    std::unordered_map<TVertexID, std::shared_ptr<SDijkstraSearchState>>
+        search_states;
 
     // state object is wrapped in shared_ptr because they might have to
     // be sent across threads in precompute. We don't need a lock because no two
@@ -88,7 +115,7 @@ struct CDijkstraPathRouter::SImplementation {
     // vertex_map & connection map also does not have to be locked, because they
     // are read-only in Precompute
 
-    vertices_index IndexOf(const TVertexID id) const {
+    TVertexIndex IndexOf(const TVertexID id) const {
         const auto it = vertices.find(id);
         if (it == vertices.cend()) {
             throw std::out_of_range("unknown vertex id");
@@ -137,9 +164,10 @@ struct CDijkstraPathRouter::SImplementation {
             } while (vertices.contains(id));
         }
 
-        // we don't mark graph dirty if we just inserted a vertex
-        // because by default it is not reachable
-        // is_dirty = true;
+        // now we should mark graph dirty when we insert a vertex, because new
+        // vertices, albeit unreachable by default, will change CSR
+        // representation
+        is_graph_dirty = true;
 
         if (const auto existing = vertices.find(id);
             existing != vertices.cend()) {
@@ -150,12 +178,10 @@ struct CDijkstraPathRouter::SImplementation {
         const auto new_index = vertices.size();
         index_to_id.emplace_back(id);
         vertices.insert_or_assign(id, std::pair{new_index, std::move(tag)});
-        adjacency_list.insert_or_assign(
-            id, std::unordered_map<TVertexID, double>());
 
         // for all nodes that have a state, resize the dense distance vector
-        for (const auto &[_, vertex_state] : state) {
-            vertex_state->distance.emplace_back(kInf);
+        for (const auto &[_, vertex_state] : search_states) {
+            vertex_state->distance.emplace_back(double_inf);
         }
 
         return id;
@@ -173,26 +199,83 @@ struct CDijkstraPathRouter::SImplementation {
             return false;
 
         // update state flag
-        is_dirty = true;
+        is_graph_dirty = true;
 
-        // compare with epsilon for double fp error
-        if (const auto src_it = adjacency_list[src].find(dest);
-            src_it == adjacency_list[src].cend() ||
-            weight < src_it->second - epsilon) {
-            adjacency_list[src].insert_or_assign(dest, weight);
-            reverse_adjacency_list[dest].insert_or_assign(src, weight);
-        }
+        raw_edges.emplace_back(IndexOf(src), IndexOf(dest), weight);
 
         if (bidir) {
-            if (const auto dst_it = adjacency_list[dest].find(src);
-                dst_it == adjacency_list[dest].cend() ||
-                weight < dst_it->second - epsilon) {
-                adjacency_list[dest].insert_or_assign(src, weight);
-                reverse_adjacency_list[src].insert_or_assign(dest, weight);
-            }
+            raw_edges.emplace_back(IndexOf(dest), IndexOf(src), weight);
         }
 
         return true;
+    }
+
+    void BuildCSR() noexcept {
+        if (!is_graph_dirty) {
+            return;
+        }
+
+        // wipe everything because graph is dirty and we reconstruct
+        rev_adj_matrix_row_ptr.clear();
+        rev_adj_matrix_row_ptr.resize(vertices.size() + 1);
+        rev_adj_matrix_col_idx.clear();
+        rev_adj_matrix_weight.clear();
+
+        adj_matrix_row_ptr.clear();
+        adj_matrix_row_ptr.resize(vertices.size() + 1);
+        adj_matrix_col_idx.clear();
+        adj_matrix_weight.clear();
+
+        std::ranges::sort(raw_edges);
+
+        // because it is sorted in non-descending order, any duplicates after
+        // always have a larger weight. just throw them away
+        auto unique_tail =
+            std::ranges::unique(raw_edges, [](const SEdge &a, const SEdge &b) {
+                return a.u_by_idx == b.u_by_idx && a.v_by_idx == b.v_by_idx;
+            });
+        raw_edges.erase(unique_tail.begin(), unique_tail.end());
+
+        // pre-reserve E for these two after dedup
+        adj_matrix_col_idx.reserve(raw_edges.size());
+        adj_matrix_weight.reserve(raw_edges.size());
+
+        // reverse matrix uses scatter fill so we need to resize instead
+        rev_adj_matrix_col_idx.resize(raw_edges.size());
+        rev_adj_matrix_weight.resize(raw_edges.size());
+
+        std::vector<std::size_t> indegree(vertices.size(), 0);
+        for (const auto &edge : raw_edges) {
+            ++indegree[edge.v_by_idx];
+        }
+
+        std::vector<std::size_t> outdegree(vertices.size(), 0);
+        for (const auto &edge : raw_edges) {
+            ++outdegree[edge.u_by_idx];
+        }
+
+        // prefix sum
+        std::partial_sum(indegree.cbegin(), indegree.cend(),
+                         rev_adj_matrix_row_ptr.begin() + 1);
+        rev_adj_matrix_row_ptr[0] = 0;
+
+        std::partial_sum(outdegree.cbegin(), outdegree.cend(),
+                         adj_matrix_row_ptr.begin() + 1);
+        adj_matrix_row_ptr[0] = 0;
+
+        auto reverse_cursor = rev_adj_matrix_row_ptr;
+
+        for (const auto &[u_by_idx, v_by_idx, weight] : raw_edges) {
+
+            adj_matrix_col_idx.emplace_back(v_by_idx);
+            adj_matrix_weight.emplace_back(weight);
+
+            // scatter populate reverse CSR because edge is sorted in forward order
+            const auto pos = reverse_cursor[v_by_idx];
+            rev_adj_matrix_col_idx[pos] = u_by_idx;
+            rev_adj_matrix_weight[pos] = weight;
+            ++reverse_cursor[v_by_idx];
+        }
     }
 
     std::any GetVertexTag(const TVertexID id) const noexcept {
@@ -211,39 +294,43 @@ struct CDijkstraPathRouter::SImplementation {
             return 0.0;
         }
 
+        // if any of the specified vertices does not exist, we bail out
+        if (!vertices.contains(src) || !vertices.contains(dest)) {
+            return NoPathExists;
+        }
+
         // if the graph is not changed (marked dirty by AddEdge) and the dest
         // vertex is visited, we had searched it, and we just backtrack the path
         // and returns the calculated value. we could cache the path too and
         // completely eliminate any extra calculation, but that is costly on
         // space and I doubt this will be a hot path
-        if (!vertices.contains(src) || !vertices.contains(dest)) {
-            return NoPathExists;
-        }
-
-        if (!is_dirty && state.contains(src) &&
-            state[src]->distance[IndexOf(dest)] != kInf &&
-            state[src]->pq.empty()) {
-            auto &dist = state[src]->distance;
+        if (!is_graph_dirty && search_states.contains(src) &&
+            search_states[src]->distance[IndexOf(dest)] != double_inf &&
+            search_states[src]->pq.empty()) {
+            const auto &dist = search_states[src]->distance;
 
             if (dist.size() != vertices.size()) {
                 throw std::runtime_error("distance vector size mismatch");
             }
 
-            path.emplace_back(dest);
+            path.emplace_back(IndexOf(dest));
             std::size_t hops = 0;
             const auto max_hops = vertices.size();
-            while (path.back() != src) {
-                const auto &rev_conn_vertices =
-                    reverse_adjacency_list[path.back()];
+            const auto src_idx = IndexOf(src);
+            while (path.back() != src_idx) {
                 bool found_prev = false;
-                for (const auto &[v, d] : rev_conn_vertices) {
-                    const auto curr_idx = IndexOf(path.back());
-                    const auto prev_idx = IndexOf(v);
-                    if (dist[curr_idx] == kInf || dist[prev_idx] == kInf) {
+                const auto curr = path.back();
+                const auto rev_begin = rev_adj_matrix_row_ptr[curr],
+                           rev_end = rev_adj_matrix_row_ptr[curr + 1];
+
+                for (auto i = rev_begin; i < rev_end; ++i) {
+                    const auto v = rev_adj_matrix_col_idx[i];
+                    const auto d = rev_adj_matrix_weight[i];
+                    if (dist[curr] == double_inf || dist[v] == double_inf) {
                         continue;
                     }
 
-                    if (isClose(dist[curr_idx], dist[prev_idx] + d)) {
+                    if (isClose(dist[curr], dist[v] + d)) {
                         path.emplace_back(v);
                         found_prev = true;
                         break;
@@ -252,9 +339,9 @@ struct CDijkstraPathRouter::SImplementation {
 
 #ifndef NDEBUG
                 if (!found_prev) {
-                    std::cerr << "Path reconstruction failed at vertex "
-                              << path.back() << " pq size "
-                              << state[src]->pq.size() << "\n";
+                    std::cerr << "Path reconstruction failed at vertex " << curr
+                              << " pq size " << search_states[src]->pq.size()
+                              << "\n";
                 }
 #endif
 
@@ -263,21 +350,31 @@ struct CDijkstraPathRouter::SImplementation {
                     return NoPathExists;
                 }
             }
+
+            for (auto &v_idx : path) {
+                v_idx = index_to_id[v_idx];
+            }
+
             std::ranges::reverse(path);
-            return state[src]->distance[IndexOf(dest)];
+            return search_states[src]->distance[IndexOf(dest)];
         }
 
-        // if the graph is marked dirty, or if we haven't started a search from
-        // src yet, we (re)initialize the DijkstraSearchState and store it.
-        if (is_dirty || !state.contains(src)) {
-            state.insert_or_assign(
-                src, std::make_shared<SDijkstraSearchState>(vertices.size()));
+        // if the graph is marked dirty, we wipe all states and rebuild the CSR
+        // if only we cannot find our state, we just insert a new state
+        if (is_graph_dirty) {
+            BuildCSR();
+            search_states.clear();
+            search_states[src] =
+                std::make_shared<SDijkstraSearchState>(vertices.size());
+        } else if (!search_states.contains(src)) {
+            search_states[src] =
+                std::make_shared<SDijkstraSearchState>(vertices.size());
         }
 
         // some QoL shorthands
         // auto &tracked_path = state[src]->path;
-        auto &dist = state[src]->distance;
-        auto &pq = state[src]->pq;
+        auto &dist = search_states[src]->distance;
+        auto &pq = search_states[src]->pq;
         // auto &visited = state[src]->visited;
 
         if (dist.size() != vertices.size()) {
@@ -285,15 +382,16 @@ struct CDijkstraPathRouter::SImplementation {
         }
 
         if (pq.empty()) {
-            if (state[src]->started) {
+            if (search_states[src]->started) {
                 // if it is started and queue is still empty, while the dest is
                 // not calculated, it is unreachable. return NoPathExists
                 return NoPathExists;
             }
             // otherwise, we insert the source and start the search
-            pq.emplace(0, src);
-            dist[IndexOf(src)] = 0.0;
-            state[src]->started = true;
+            auto src_index = IndexOf(src);
+            pq.emplace(0, src_index);
+            dist[src_index] = 0.0;
+            search_states[src]->started = true;
         }
 
         while (!pq.empty()) {
@@ -303,7 +401,7 @@ struct CDijkstraPathRouter::SImplementation {
 
             // lazy delete -- if the path in priority_queue is not shorter than
             // the recorded distance, we skip it
-            if (dist[IndexOf(u)] < u_weight - epsilon)
+            if (dist[u] < u_weight - epsilon)
                 continue;
 
             // visited.insert(u);
@@ -315,45 +413,49 @@ struct CDijkstraPathRouter::SImplementation {
             // if (u == dest) {
             //     break;
             // }
+            const auto adjacent_begin = adj_matrix_row_ptr[u],
+                       adjacent_end = adj_matrix_row_ptr[u + 1];
 
-            if (const auto u_adj_list_it = adjacency_list.find(u);
-                u_adj_list_it != adjacency_list.cend()) {
-                for (const auto [v, v_weight] : u_adj_list_it->second) {
-                    const auto new_distance = dist[IndexOf(u)] + v_weight;
+            for (auto i = adjacent_begin; i < adjacent_end; ++i) {
+                const auto v_index = adj_matrix_col_idx[i];
+                const auto v_weight = adj_matrix_weight[i];
 
-                    if (new_distance < dist[IndexOf(v)] - epsilon) {
-                        dist[IndexOf(v)] = new_distance;
-                        // tracked_path.insert_or_assign(v, u);
-                        pq.emplace(new_distance, v);
-                    }
+                const auto new_distance = dist[u] + v_weight;
+
+                if (new_distance < dist[v_index] - epsilon) {
+                    dist[v_index] = new_distance;
+                    pq.emplace(new_distance, v_index);
                 }
             }
         }
 
-        is_dirty = false;
+        is_graph_dirty = false;
 
         // if after Dijkstra we still don't have it in our dest, it's
         // unreachable. don't add anything to path and return NoPathExists
-        if (dist[IndexOf(dest)] == kInf) {
+        if (dist[IndexOf(dest)] == double_inf) {
             return NoPathExists;
         }
 
         // reconstruct path from the tracked_path map
-        path.emplace_back(dest);
+        path.emplace_back(IndexOf(dest));
         std::size_t hops = 0;
         const auto max_hops = vertices.size();
-        while (path.back() != src) {
+        const auto src_idx = IndexOf(src);
+        while (path.back() != src_idx) {
             bool found_prev = false;
-            for (const auto &rev_conn_vertices =
-                     reverse_adjacency_list[path.back()];
-                 const auto &[v, d] : rev_conn_vertices) {
-                const auto curr_idx = IndexOf(path.back());
-                const auto prev_idx = IndexOf(v);
-                if (dist[curr_idx] == kInf || dist[prev_idx] == kInf) {
+            const auto curr = path.back();
+            const auto rev_begin = rev_adj_matrix_row_ptr[curr],
+                       rev_end = rev_adj_matrix_row_ptr[curr + 1];
+
+            for (auto i = rev_begin; i < rev_end; ++i) {
+                const auto v = rev_adj_matrix_col_idx[i];
+                const auto d = rev_adj_matrix_weight[i];
+                if (dist[curr] == double_inf || dist[v] == double_inf) {
                     continue;
                 }
 
-                if (isClose(dist[curr_idx], dist[prev_idx] + d)) {
+                if (isClose(dist[curr], dist[v] + d)) {
                     path.emplace_back(v);
                     found_prev = true;
                     break;
@@ -364,19 +466,16 @@ struct CDijkstraPathRouter::SImplementation {
             if (!found_prev) {
                 static std::atomic<int> s_debug_count = 0;
                 if (s_debug_count.fetch_add(1) < 30) {
-                    const auto curr = path.back();
-                    const auto curr_idx = IndexOf(curr);
                     std::size_t rev_degree = 0;
-                    double best_abs_err = kInf;
-                    if (const auto rev_it = reverse_adjacency_list.find(curr);
-                        rev_it != reverse_adjacency_list.cend()) {
-                        rev_degree = rev_it->second.size();
-                        for (const auto &[v, d] : rev_it->second) {
-                            const auto lhs = dist[curr_idx];
-                            const auto rhs = dist[IndexOf(v)] + d;
-                            best_abs_err =
-                                std::min(best_abs_err, std::abs(lhs - rhs));
-                        }
+                    double best_abs_err = double_inf;
+
+                    for (auto i = rev_begin; i < rev_end; ++i) {
+                        const auto v = rev_adj_matrix_col_idx[i];
+                        const auto d = rev_adj_matrix_weight[i];
+                        const auto lhs = dist[curr];
+                        const auto rhs = dist[v] + d;
+                        best_abs_err =
+                            std::min(best_abs_err, std::abs(lhs - rhs));
                     }
 
                     std::cerr
@@ -384,7 +483,7 @@ struct CDijkstraPathRouter::SImplementation {
                         << " dest=" << dest << " curr=" << curr
                         << " hops=" << hops << " pq_size=" << pq.size()
                         << " rev_degree=" << rev_degree
-                        << " dist_curr=" << dist[curr_idx]
+                        << " dist_curr=" << dist[curr]
                         << " best_abs_err=" << best_abs_err << "\n";
                 }
             }
@@ -395,6 +494,12 @@ struct CDijkstraPathRouter::SImplementation {
                 return NoPathExists;
             }
         }
+
+        // currently it is index stored in the path vector. map it back to ID
+        for (auto &v_idx : path) {
+            v_idx = index_to_id[v_idx];
+        }
+
         // it is the other way round because we backtrack, reverse it
         std::ranges::reverse(path);
 
@@ -404,12 +509,33 @@ struct CDijkstraPathRouter::SImplementation {
 
     struct FShortPathPrecomputeWorker {
         const TVertexID src;
+
         std::shared_ptr<SDijkstraSearchState> state;
-        const adjacency_list_t &adjacency_list;
+
+        const std::vector<std::size_t> &adj_matrix_row_ptr;
+        const std::vector<std::size_t> &adj_matrix_col_idx;
+        const std::vector<double> &adj_matrix_weight;
+
         const vertices_t &vertices;
         const std::stop_token &stop_token;
 
+        TVertexIndex IndexOf(const TVertexID id) const {
+            const auto it = vertices.find(id);
+            if (it == vertices.cend()) {
+                throw std::out_of_range("unknown vertex id");
+            }
+            const auto idx = it->second.first;
+            if (idx >= vertices.size()) {
+                throw std::out_of_range("corrupt vertex index");
+            }
+            return idx;
+        }
+
         void operator()() const {
+            if (!vertices.contains(src)) {
+                return;
+            }
+
             // some QoL shorthands
             // auto &tracked_path = state->path;
             auto &dist = state->distance;
@@ -427,11 +553,9 @@ struct CDijkstraPathRouter::SImplementation {
                     return;
                 }
                 // otherwise, we insert the source and start the search
-                pq.emplace(0, src);
-                const auto u_vertices_it = vertices.find(src);
-                if (u_vertices_it == vertices.cend())
-                    return;
-                dist[u_vertices_it->second.first] = 0.0;
+                const auto src_index = IndexOf(src);
+                pq.emplace(0, src_index);
+                dist[src_index] = 0.0;
                 state->started = true;
             }
 
@@ -442,29 +566,24 @@ struct CDijkstraPathRouter::SImplementation {
 
                 // lazy delete -- if the path in priority_queue is not shorter
                 // than the recorded distance, we skip it
-                const auto u_vertices_it = vertices.find(u);
-                if (u_vertices_it == vertices.cend() ||
-                    dist[u_vertices_it->second.first] < u_weight - epsilon)
+                if (dist[u] < u_weight - epsilon)
                     continue;
-
-                const auto u_index = u_vertices_it->second.first;
 
                 // visited.insert(u);
 
-                if (const auto u_adj_list_it = adjacency_list.find(u);
-                    u_adj_list_it != adjacency_list.cend()) {
-                    for (const auto [v, v_weight] : u_adj_list_it->second) {
-                        const auto new_distance = dist[u_index] + v_weight;
-                        const auto v_vertices_it = vertices.find(v);
-                        if (v_vertices_it == vertices.cend())
-                            continue;
+                const auto adjacent_begin = adj_matrix_row_ptr[u],
+                           adjacent_end = adj_matrix_row_ptr[u + 1];
 
-                        if (new_distance <
-                            dist[v_vertices_it->second.first] - epsilon) {
-                            dist[v_vertices_it->second.first] = new_distance;
-                            // tracked_path.insert_or_assign(v, u);
-                            pq.emplace(new_distance, v);
-                        }
+                for (auto i = adjacent_begin; i < adjacent_end; ++i) {
+                    const auto v_index = adj_matrix_col_idx[i];
+                    const auto v_weight = adj_matrix_weight[i];
+
+                    const auto new_distance = dist[u] + v_weight;
+
+                    if (new_distance < dist[v_index] - epsilon) {
+                        dist[v_index] = new_distance;
+                        // tracked_path.insert_or_assign(v, u);
+                        pq.emplace(new_distance, v_index);
                     }
                 }
             }
@@ -487,20 +606,26 @@ struct CDijkstraPathRouter::SImplementation {
             return hardware_concurrency > 0 ? hardware_concurrency : 1;
         }();
 
+        // wipe all states and rebuild CSR if graph is dirty
+        if (is_graph_dirty) {
+            BuildCSR();
+            search_states.clear();
+        }
+
         std::vector<TVertexID> pending_sources;
 
         // add all ids into pending_sources
         for (const auto &[id, _] : vertices) {
             pending_sources.emplace_back(id);
-            if (!state.contains(id) || is_dirty) {
-                state.insert_or_assign(
-                    id, std::make_shared<SDijkstraSearchState>(vertices.size()));
+            if (!search_states.contains(id)) {
+                search_states[id] =
+                    std::make_shared<SDijkstraSearchState>(vertices.size());
             }
         }
 
         // if nothing to precompute, return
         if (pending_sources.empty()) {
-            is_dirty = false;
+            is_graph_dirty = false;
             return true;
         }
 
@@ -519,11 +644,14 @@ struct CDijkstraPathRouter::SImplementation {
 
                 auto src = pending_sources[idx];
 
-                FShortPathPrecomputeWorker{.src = src,
-                                           .state = state[src],
-                                           .adjacency_list = adjacency_list,
-                                           .vertices = vertices,
-                                           .stop_token = stop_token}();
+                FShortPathPrecomputeWorker{
+                    .src = src,
+                    .state = search_states[src],
+                    .adj_matrix_row_ptr = adj_matrix_row_ptr,
+                    .adj_matrix_col_idx = adj_matrix_col_idx,
+                    .adj_matrix_weight = adj_matrix_weight,
+                    .vertices = vertices,
+                    .stop_token = stop_token}();
 
                 ++finish_count;
             }
@@ -536,15 +664,21 @@ struct CDijkstraPathRouter::SImplementation {
         while (std::chrono::steady_clock::now() < deadline) {
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
             if (finish_count.load() == pending_sources.size()) {
-                break;
+                is_graph_dirty = false;
+                return true;
             }
         }
+
+        // we always set graph clean even on timeout, because the main algorithm
+        // is designed as resumable. This is just to make sure CSR and state
+        // aligns to our current graph structure
+        is_graph_dirty = false;
 
         for (auto &thread : threads) {
             thread.request_stop();
         }
 
-        return true;
+        return false;
     }
 };
 
