@@ -460,11 +460,11 @@ struct CDijkstraPathRouter::SImplementation {
             return false;
         }
 
-        // use core count - 1 or 1
+        // use core count or 1
         const auto concurrency = []() {
             const auto hardware_concurrency =
                 std::jthread::hardware_concurrency();
-            return hardware_concurrency > 1 ? hardware_concurrency - 1 : 1;
+            return hardware_concurrency > 0 ? hardware_concurrency : 1;
         }();
 
         std::vector<TVertexID> pending_sources;
